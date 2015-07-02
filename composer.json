@@ -1,0 +1,40 @@
+{
+    "name": "oxygen/mod-media",
+    "description": "Media Storage and Editing",
+    "license": "MIT",
+    "keywords": [
+        "cms",
+        "framework",
+        "OxygenExtension"
+    ],
+    "authors": [
+        {
+            "name": "Chris Chamberlain",
+            "email": "c.chamberlain@iinet.net.au"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.9",
+        "oxygen/core": "dev-master",
+        "intervention/image":  "~2.0",
+        "illuminate/support": "~5.1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "OxygenModule\\Media\\": "src/"
+        }
+    },
+    "extra": {
+        "title": "Oxygen Module - Media",
+        "readme": "oxygen.md",
+        "changes": "changes.md",
+        "icon": "icon.png",
+        "providers": [
+            {
+                "name": "Media",
+                "class": "OxygenModule\\Media\\MediaServiceProvider",
+                "description": "Adds the Media interface"
+            }
+        ]
+    }
+}
