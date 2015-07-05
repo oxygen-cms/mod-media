@@ -66,6 +66,17 @@ class MediaServiceProvider extends BaseServiceProvider {
         $this->app->singleton(HtmlPresenter::class, function($app) {
             return new HtmlPresenter($app['cache'], $app['config'], $app[MediaRepositoryInterface::class]);
         });
+
+        // extend backup functionality
+        if(class_exists('OxygenModule\ImportExport\ImportExportManager')) {
+            $mediaWorker = function($importExportManager) {
+                $importExportManager->addWorker(new MediaWorker($this->app[MediaRepositoryInterface::class], $this->app['config']));
+            };
+            if($this->app->resolved('OxygenModule\ImportExport\ImportExportManager')) {
+                $mediaWorker($this->app['OxygenModule\ImportExport\ImportExportManager']);
+            }
+            $this->app->resolving('OxygenModule\ImportExport\ImportExportManager', $mediaWorker);
+        }
     }
 
     /**
