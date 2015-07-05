@@ -163,6 +163,7 @@ class MediaController extends VersionableCrudController {
      */
     public function getUpload() {
         return View::make('oxygen/mod-media::upload', [
+            'fields' => $this->crudFields,
             'media' => $this->repository->listKeysAndValues('id', 'name', new QueryParameters(['excludeVersions'])),
             'title' => Lang::get('oxygen/mod-media::ui.upload.title')
         ]);
