@@ -130,7 +130,7 @@ class MediaController extends VersionableCrudController {
     public function getUpdate($item) {
         $item = $this->getItem($item);
 
-        return View::make('media.update', [
+        return View::make('oxygen/mod-media::update', [
             'item' => $item,
             'fields' => $this->crudFields,
             'title' => Lang::get('oxygen/crud::ui.resource.update')
@@ -150,7 +150,7 @@ class MediaController extends VersionableCrudController {
             return Response::notification(new Notification(Lang::get('oxygen/mod-media::messages.onlyAbleToEditImages'), Notification::FAILED));
         }
 
-        return View::make('media.editImage', [
+        return View::make('oxygen/mod-media::editImage', [
             'item' => $item,
             'title' => Lang::get('oxygen/mod-media::ui.editImage.title')
         ]);
@@ -162,8 +162,8 @@ class MediaController extends VersionableCrudController {
      * @return \Illuminate\Http\Response
      */
     public function getUpload() {
-        return View::make('media.upload', [
-            'media' => $this->repository->listKeysAndValues('id', 'name', ['excludeVersions']),
+        return View::make('oxygen/mod-media::upload', [
+            'media' => $this->repository->listKeysAndValues('id', 'name', new QueryParameters(['excludeVersions'])),
             'title' => Lang::get('oxygen/mod-media::ui.upload.title')
         ]);
     }
@@ -326,7 +326,7 @@ class MediaController extends VersionableCrudController {
         $original = $this->resizeImage($original, 1280, 'Large');
 
         $this->repository->makeHeadVersion($original);
-        
+
         return Response::notification(new Notification(Lang::get('oxygen/mod-media::messages.madeResponsive')), ['refresh' => true]);
     }
 

@@ -64,6 +64,6 @@
 
 @endif
 
-{{ $items->render() }}
+{!! $items->render() !!}
 
 @stop
