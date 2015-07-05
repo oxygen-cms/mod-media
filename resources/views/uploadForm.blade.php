@@ -1,6 +1,6 @@
 <div class="Row--noLayout">
     <div class="FileUpload">
-        {{ Form::file('file[]', array('multiple')) }}
+        <input name="file[]" multiple>
         <span class="FileUpload-message FileUpload--js">Drop files here</span>
         <span class="FileUpload-subMessage FileUpload--js">(or click to select)</span>
         <span class="FileUpload-message FileUpload--noJs">Click to select files</span>
@@ -8,25 +8,31 @@
     </div>
 
     <?php
-    $fields = [];
+        use Illuminate\Support\Collection;
+        use Oxygen\Core\Form\FieldMetadata;
+        use Oxygen\Core\Html\Form\EditableField;
+        use Oxygen\Core\Html\Form\Label;
+        use Oxygen\Core\Html\Form\Row;
 
-    $fields[] = new EditableField($fields->getField('name'), app('request'));
+        $fields = [];
 
-    $fields[] = new EditableField($fields->getField('slug'), app('request'));
+        $fields[] = new EditableField($fields->getField('name'), app('request'));
 
-    // using a Collection resolves an issue where the integer array keys of $media are ignored
-    $media = new Collection($media);
-    $media->put('_new', '(Create New)');
+        $fields[] = new EditableField($fields->getField('slug'), app('request'));
 
-    $headVersion = new FieldMetadata('headVersion', 'select', true);
-    $headVersion->options = $media;
-    $headVersion = new EditableField($headVersion, '_new');
-    $fields[] = $headVersion;
+        // using a Collection resolves an issue where the integer array keys of $media are ignored
+        $media = new Collection($media);
+        $media->put('_new', '(Create New)');
 
-    foreach($fields as $field) {
-        $row = new Row([ new Label($field->getMeta()), $field ]);
-        echo $row->render();
-    }
+        $headVersion = new FieldMetadata('headVersion', 'select', true);
+        $headVersion->options = $media;
+        $headVersion = new EditableField($headVersion, '_new');
+        $fields[] = $headVersion;
+
+        foreach($fields as $field) {
+            $row = new Row([ new Label($field->getMeta()), $field ]);
+            echo $row->render();
+        }
     ?>
 </div>
 
