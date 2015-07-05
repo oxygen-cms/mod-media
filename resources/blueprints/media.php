@@ -1,12 +1,12 @@
 <?php
 
-use App\Entity\Media;
+use OxygenModule\Media\Entity\Media;
 use Oxygen\Core\Html\Dialog\Dialog;
 use Oxygen\Core\Html\Toolbar\Factory\VoidButtonToolbarItemFactory;
 use Oxygen\Crud\BlueprintTrait\VersionableCrudTrait;
-    use OxygenModule\Media\Controller\MediaController;
+use OxygenModule\Media\Controller\MediaController;
 
-    Blueprint::make('Media', function($blueprint) {
+Blueprint::make('Media', function($blueprint) {
     $blueprint->setDisplayName('Media', Blueprint::PLURAL);
     $blueprint->setController(MediaController::class);
     $blueprint->setIcon('picture-o');
