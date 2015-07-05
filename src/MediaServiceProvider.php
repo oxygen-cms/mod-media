@@ -18,7 +18,7 @@ class MediaServiceProvider extends BaseServiceProvider {
      *
      * @var bool
      */
-    protected $defer = true;
+    protected $defer = false;
 
     /**
      * Boots the package.
