@@ -3,6 +3,7 @@
 namespace OxygenModule\Media;
 
 use Doctrine\ORM\EntityManager;
+use Oxygen\Core\Blueprint\BlueprintManager;
 use OxygenModule\Media\Presenter\HtmlPresenter;
 use OxygenModule\Media\Presenter\PresenterInterface;
 use OxygenModule\Media\Repository\DoctrineMediaRepository;
@@ -34,6 +35,8 @@ class MediaServiceProvider extends BaseServiceProvider {
             __DIR__ . '/../resources/views' => base_path('resources/views/vendor/oxygen/mod-media'),
             __DIR__ . '/../resources/config/config.php' => config_path('oxygen/mod-media.php')
         ]);
+        
+        $this->app[BlueprintManager::class]->loadDirectory(__DIR__ . '/../resources/blueprints');
 
         // Extends Blade compiler
         $this->app['blade.compiler']->directive('media', function($expression) {
