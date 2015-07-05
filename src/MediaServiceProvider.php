@@ -40,7 +40,7 @@ class MediaServiceProvider extends BaseServiceProvider {
 
         // Extends Blade compiler
         $this->app['blade.compiler']->directive('media', function($expression) {
-            return '<?php echo app(\'OxygenModule\Media\HtmlPresenter\')->display' . $expression . '; ?>';
+            return '<?php echo app(\'' . HtmlPresenter::class . '\')->display' . $expression . '; ?>';
         });
     }
 

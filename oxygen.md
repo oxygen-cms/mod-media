@@ -1,1 +1,1 @@
-The Oxygen Marketplace 
+The Oxygen Media Manager
