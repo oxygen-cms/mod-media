@@ -4,7 +4,8 @@
 
 <?php
 
-    use App\Entity\Media;
+    use OxygenModule\Media\Entity\Media;
+    use OxygenModule\Media\Presenter\PresenterInterface;
     use Oxygen\Core\Blueprint\Blueprint;
     use Oxygen\Core\Html\Header\Header;
 
@@ -29,7 +30,7 @@
      ===================== -->
 
 <div class="Block">
-    {{ $sectionHeader->render() }}
+    {!! $sectionHeader->render() !!}
 </div>
 
 <!-- =====================
@@ -44,8 +45,8 @@
     </div>
 @else
 
-<div class="Row--layout Row--equalCells">
-    <?php
+    <div class="Row--layout Row--equalCells">
+        <?php
         foreach($items as $item):
             $itemHeader = Header::fromBlueprint($blueprint, $fields, ['model' => $item, 'span' => 'oneThird'], Header::TYPE_BLOCK, 'item');
 
@@ -54,12 +55,12 @@
                 $itemHeader->setIcon($icon);
             }
 
-            $itemHeader->setContent(App::make('App\Media\PresenterInterface')->preview($item));
+            $itemHeader->setContent(App::make(PresenterInterface::class)->preview($item));
 
             echo $itemHeader->render();
         endforeach;
-    ?>
-</div>
+        ?>
+    </div>
 
 @endif
 
