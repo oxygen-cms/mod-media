@@ -152,6 +152,7 @@ class MediaController extends VersionableCrudController {
 
         return View::make('oxygen/mod-media::editImage', [
             'item' => $item,
+            'fields' => $this->crudFields,
             'title' => Lang::get('oxygen/mod-media::ui.editImage.title')
         ]);
     }

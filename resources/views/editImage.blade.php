@@ -2,7 +2,7 @@
 
 @section('content')
 
-@include('oxygen/crud::versionable.itemHeader', ['blueprint' => $blueprint, 'item' => $item, 'title' => $title])
+@include('oxygen/crud::versionable.itemHeader', ['blueprint' => $blueprint, 'fields' => $fields, 'item' => $item, 'title' => $title])
 
 <!-- =====================
              INFO
