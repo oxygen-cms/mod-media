@@ -14,11 +14,11 @@
         use Oxygen\Core\Html\Form\Label;
         use Oxygen\Core\Html\Form\Row;
 
-        $fields = [];
+        $f = [];
 
-        $fields[] = new EditableField($fields->getField('name'), app('request'));
+        $f[] = new EditableField($fields->getField('name'), app('request'));
 
-        $fields[] = new EditableField($fields->getField('slug'), app('request'));
+        $f[] = new EditableField($fields->getField('slug'), app('request'));
 
         // using a Collection resolves an issue where the integer array keys of $media are ignored
         $media = new Collection($media);
@@ -27,9 +27,9 @@
         $headVersion = new FieldMetadata('headVersion', 'select', true);
         $headVersion->options = $media;
         $headVersion = new EditableField($headVersion, '_new');
-        $fields[] = $headVersion;
+        $f[] = $headVersion;
 
-        foreach($fields as $field) {
+        foreach($f as $field) {
             $row = new Row([ new Label($field->getMeta()), $field ]);
             echo $row->render();
         }
