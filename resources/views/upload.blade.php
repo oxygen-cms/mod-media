@@ -33,7 +33,7 @@
         $form = new Form($blueprint->getAction('postUpload'));
         $form->setUseMultipartFormData(true);
 
-        $form->addContent(View::make('oxygen/mod-media::uploadForm', ['fields' => $fields]));
+        $form->addContent(View::make('oxygen/mod-media::uploadForm', ['fields' => $fields, 'media' => $media]));
 
         echo $form->render();
     ?>
