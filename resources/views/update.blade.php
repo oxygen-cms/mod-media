@@ -32,7 +32,7 @@
             'overwrite' => 'Overwrite Existing Version',
             'guess' => 'Create a New Version if Needed'
     ];
-    $versionField = new EditableField($versionFieldMeta, 'guess');
+    $versionField = new EditableField($versionFieldMeta, app('request'), 'guess');
     $versionRow = new Row([new Label($versionField->getMeta()), $versionField]);
 
 ?>
