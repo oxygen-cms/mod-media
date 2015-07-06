@@ -1,5 +1,5 @@
 <?php
-    
+
 namespace OxygenModule\Media\Repository;
 
 use OxygenModule\Media\Entity\Media;
@@ -118,7 +118,7 @@ class MediaSubscriber implements EventSubscriber {
 
         // if there is only one entity with this filename
         if($count <= 1) {
-            $path = $this->config->get('media.directory.filesystem') . '/' . $entity->getFilename();
+            $path = $this->config->get('oxygen.mod-media.directory.filesystem') . '/' . $entity->getFilename();
             if($this->files->exists($path)) {
                 $this->files->delete($path);
             }

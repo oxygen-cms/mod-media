@@ -29,7 +29,7 @@ class MediaWorker implements WorkerInterface {
     public function getFiles($backupKey) {
         $media = $this->media->columns(['filename']);
         $files = [];
-        $baseDir = $this->config->get('media.directory.filesystem');
+        $baseDir = $this->config->get('oxygen.mod-media.directory.filesystem');
         foreach($media as $item) {
             $fullFile = $baseDir . '/' . $item['filename'];
             $files[$fullFile] = '/content/media' . '/' . $item['filename'];
