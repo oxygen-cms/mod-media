@@ -282,7 +282,7 @@ class MediaController extends VersionableCrudController {
             }
 
             $this->repository->persist($media, false);
-            
+
             $file->move(Config::get('oxygen.mod-media.directory.filesystem'), $media->getFilename());
 
             $messages = new MessageBag();
