@@ -107,7 +107,7 @@ class MediaController extends VersionableCrudController {
             $image = $macroProcessor->process(ImageFacade::make($filename));
 
             if(isset($input['save']) && $input['save'] === 'true') {
-                $image->save(Config::get('media.directory.filesystem') . '/' . $item->getFilename());
+                $image->save(Config::get('oxygen.mod-media.directory.filesystem') . '/' . $item->getFilename());
 
                 $name = $input['name'];
                 $slug = $input['slug'];
@@ -282,7 +282,7 @@ class MediaController extends VersionableCrudController {
             }
 
             $this->repository->persist($media, false);
-
+            
             $file->move(Config::get('oxygen.mod-media.directory.filesystem'), $media->getFilename());
 
             $messages = new MessageBag();
