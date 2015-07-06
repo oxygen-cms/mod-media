@@ -4,10 +4,11 @@ namespace OxygenModule\Media\Controller;
 
 use Config;
 use Exception;
+use Illuminate\Http\Request;
 use Input;
 use Lang;
 use Response;
-use Str;
+use Illuminate\Support\Str;
 use Validator;
 use View;
 
@@ -175,9 +176,9 @@ class MediaController extends VersionableCrudController {
      *
      * @return \Illuminate\Http\Response
      */
-    public function postUpload() {
+    public function postUpload(Request $input) {
         // if no file has been uploaded
-        if(!Input::hasFile('file')) {
+        if(!$input->hasFile('file')) {
             // guess if post_max_size has been reached
             if (empty($_FILES) && empty($_POST) && isset($_SERVER['REQUEST_METHOD']) && strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
                 $message = Lang::get('oxygen/mod-media::messages.upload.tooLarge');
@@ -190,10 +191,10 @@ class MediaController extends VersionableCrudController {
             );
         }
 
-        $files = Input::file('file');
-        $name = Input::get('name', '')  === '' ? null : Input::get('name');
-        $slug = Input::get('slug', '')  === '' ? null : Input::get('slug');
-        $headVersion = Input::get('headVersion', '_new') === '_new' ? null : (int) Input::get('headVersion');
+        $files = $input->file('file');
+        $name = $input->get('name', '')  === '' ? null : $input->get('name');
+        $slug = $input->get('slug', '')  === '' ? null : $input->get('slug');
+        $headVersion = $input->get('headVersion', '_new') === '_new' ? null : (int) $input->get('headVersion');
         $text = '';
         $success = true;
 

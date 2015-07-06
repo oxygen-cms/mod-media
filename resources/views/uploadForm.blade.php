@@ -1,4 +1,4 @@
-<div class="Row--noLayout">
+<div class="Row--visual">
     <div class="FileUpload">
         <input name="file[]" multiple>
         <span class="FileUpload-message FileUpload--js">Drop files here</span>
