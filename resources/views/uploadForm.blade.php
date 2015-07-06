@@ -26,7 +26,7 @@
 
         $headVersion = new FieldMetadata('headVersion', 'select', true);
         $headVersion->options = $media;
-        $headVersion = new EditableField($headVersion, '_new');
+        $headVersion = new EditableField($headVersion, app('request'), '_new');
         $f[] = $headVersion;
 
         foreach($f as $field) {
