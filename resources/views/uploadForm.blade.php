@@ -20,12 +20,9 @@
 
         $f[] = new EditableField($fields->getField('slug'), app('request'));
 
-        // using a Collection resolves an issue where the integer array keys of $media are ignored
-        $media = new Collection($media);
-        $media->put('_new', '(Create New)');
-
         $headVersion = new FieldMetadata('headVersion', 'select', true);
         $headVersion->options = $media;
+        $headVersion->options['_new'] = '(Create New)';
         $headVersion = new EditableField($headVersion, app('request'), '_new');
         $f[] = $headVersion;
 
