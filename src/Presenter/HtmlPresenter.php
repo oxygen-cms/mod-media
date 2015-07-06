@@ -205,7 +205,7 @@ class HtmlPresenter implements PresenterInterface {
      */
 
     protected function getFilename($filename) {
-        return $this->config->get('media.directory.web') . '/' . $filename;
+        return $this->config->get('oxygen.mod-media.directory.web') . '/' . $filename;
     }
 
     /**
