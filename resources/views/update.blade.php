@@ -13,7 +13,10 @@
 
 
 <div class="Block Block--mini">
-    <?php echo App::make('App\Media\PresenterInterface')->preview($item) ?>
+    <?php
+        use OxygenModule\Media\Presenter\PresenterInterface;
+        echo App::make(PresenterInterface::class)->preview($item);
+    ?>
 </div>
 
 <?php
