@@ -7,7 +7,7 @@ use Oxygen\Crud\BlueprintTrait\VersionableCrudTrait;
 use OxygenModule\Media\Controller\MediaController;
 
 Blueprint::make('Media', function($blueprint) {
-    $blueprint->setPluralDisplayName('Media');
+    $blueprint->disablePluralForm();
     $blueprint->setController(MediaController::class);
     $blueprint->setIcon('picture-o');
 
