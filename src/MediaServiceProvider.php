@@ -29,7 +29,6 @@ class MediaServiceProvider extends BaseServiceProvider {
         $this->mergeConfigFrom(__DIR__ . '/../config/config.php', 'oxygen.mod-media');
         $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'oxygen/mod-media');
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'oxygen/mod-media');
-        $this->loadEntitiesFrom(__DIR__ . '/Entity');
 
         $this->publishes([
             __DIR__ . '/../resources/lang' => base_path('resources/lang/vendor/oxygen/mod-media'),
@@ -51,6 +50,8 @@ class MediaServiceProvider extends BaseServiceProvider {
      * @return void
      */
     public function register() {
+        $this->loadEntitiesFrom(__DIR__ . '/Entity');
+
         // Repositories
         $this->app->bind(MediaRepositoryInterface::class, DoctrineMediaRepository::class);
 
