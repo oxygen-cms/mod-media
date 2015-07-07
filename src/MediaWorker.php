@@ -33,7 +33,7 @@ class MediaWorker implements WorkerInterface {
         $baseDir = $this->config->get('oxygen.mod-media.directory.filesystem');
         foreach($media as $item) {
             $fullFile = $baseDir . '/' . $item['filename'];
-            $files[$fullFile] = '/content/media' . '/' . $item['filename'];
+            $files[$fullFile] = 'content/media' . '/' . $item['filename'];
         }
         return $files;
     }
