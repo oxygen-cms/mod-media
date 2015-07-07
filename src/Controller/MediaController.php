@@ -226,7 +226,6 @@ class MediaController extends VersionableCrudController {
      * @param string $headVersion
      * @return MessageBag messages
      */
-
     protected function makeFromFile(UploadedFile $file, $name = null, $slug = null, $headVersion = null) {
         if(!$file->isValid()) {
             $messages = new MessageBag();

@@ -5,6 +5,7 @@ namespace OxygenModule\Media;
 use OxygenModule\ImportExport\WorkerInterface;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use Illuminate\Config\Repository;
+use ZipArchive;
 
 class MediaWorker implements WorkerInterface {
 
@@ -26,7 +27,7 @@ class MediaWorker implements WorkerInterface {
      * @param string $backupKey
      * @return mixed
      */
-    public function getFiles($backupKey) {
+    public function export($backupKey) {
         $media = $this->media->columns(['filename']);
         $files = [];
         $baseDir = $this->config->get('oxygen.mod-media.directory.filesystem');
@@ -43,8 +44,16 @@ class MediaWorker implements WorkerInterface {
      * @param string $backupKey
      * @return void
      */
-    public function cleanFiles($backupKey) {
+    public function postExport($backupKey) {
         // no temporary files created
     }
 
+    /**
+     * Cleans up any temporary files that were created after they have been added to the ZIP archive.
+     *
+     * @param \ZipArchive $zip
+     */
+    public function import(ZipArchive $zip) {
+
+    }
 }
