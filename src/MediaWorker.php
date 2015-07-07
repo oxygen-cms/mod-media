@@ -62,17 +62,30 @@ class MediaWorker implements WorkerInterface {
      */
     public function import(ZipArchive $zip) {
         $mediaFiles = [];
+        $mediaDir = null;
+
+        $regex = '/^([a-zA-Z0-9\-]+)\/' . preg_quote($this->prefix, '/') . '/';
 
         for($i = 0; $i < $zip->numFiles; $i++) {
             $filename = $zip->getNameIndex($i);
-            $parts = explode('/', $filename);
-            if(starts_with($parts[1], $this->prefix)) {
-                $mediaFiles[$filename] = preg_replace('/^' . preg_quote($this->prefix, '/') . '/', '', $parts[1]);
+
+            $matches = [];
+            if(preg_match($regex, $filename, $matches)) {
+                $mediaFiles[] = $filename;
+
+                if($mediaDir == null) {
+                    $mediaDir = $matches[1];
+                }
+
             }
         }
 
-        $this->files->cleanDirectory($this->config->get('oxygen.mod-media.directory.filesystem'));
+        $path = $this->config->get('oxygen.mod-media.directory.filesystem');
+        $this->files->cleanDirectory($path);
+        $zip->extractTo($path, $mediaFiles);
 
-        dd($mediaFiles);
+        // move `public/content/media/local-56-30-12/content/media` to `public/content/media`
+        $this->files->copyDirectory($path . '/' . $mediaDir . '/' . $this->prefix, $path);
+        $this->files->deleteDirectory($path . '/' . $mediaDir);
     }
 }
