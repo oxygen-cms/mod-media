@@ -94,7 +94,12 @@ Blueprint::make('Media', function($blueprint) {
     $blueprint->makeToolbarItem([
         'action'        => 'postMakeResponsive',
         'label'         => 'Make Responsive',
-        'icon'          => 'crop'
+        'icon'          => 'crop',
+        'shouldRenderCallback' => function($item, array $arguments) {
+            return
+                $item->shouldRenderBasic($arguments) &&
+                $arguments['model']->getType() === Media::TYPE_IMAGE;
+        }
     ]);
 
     $blueprint->makeAction([

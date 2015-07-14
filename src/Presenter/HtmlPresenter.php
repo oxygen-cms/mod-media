@@ -2,6 +2,7 @@
 
 namespace OxygenModule\Media\Presenter;
 
+use Oxygen\Data\Exception\NoResultException;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use OxygenModule\Media\Entity\Media;
 use Illuminate\Cache\CacheManager;
@@ -53,7 +54,7 @@ class HtmlPresenter implements PresenterInterface {
                 echo $this->renderAudio($sources, [['controls' => 'controls'], $customAttributes], 'Audio Not Supported');
             },
             'default.document' => function($media, $url, $customAttributes) {
-                echo $this->renderLink($media['caption'], [['target' => '_blank', 'href' => $url], $customAttributes]);
+                echo $this->renderLink($media->getCaption(), [['target' => '_blank', 'href' => $url], $customAttributes]);
             }
         ];
         $this->defaultTemplate = [
@@ -64,26 +65,18 @@ class HtmlPresenter implements PresenterInterface {
     }
 
     /**
-     * Returns an array representation of the media item.
+     * Returns all the media items
      *
-     * @param $slug
-     * @return array
+     * @return Media
      */
-
-    public function getMedia($slug) {
+    public function getMedia() {
         if($this->media === null) {
             $this->media = $this->cache->remember('media.list', 600, function() {
                 return $this->entities->listBySlug();
             });
         }
 
-        if(isset($this->media[$slug])) {
-            return $this->media[$slug];
-        } else {
-            return [
-                'type' => 'notFound'
-            ];
-        }
+        return $this->media;
     }
 
     /**
@@ -185,7 +178,7 @@ class HtmlPresenter implements PresenterInterface {
      */
 
     protected function getMimeTypeFromAudio($audio) {
-        $extension = substr(strrchr($audio['filename'], "."), 1);
+        $extension = substr(strrchr($audio->getFilename(), "."), 1);
 
         switch($extension) {
             case 'ogx':
@@ -216,14 +209,16 @@ class HtmlPresenter implements PresenterInterface {
      * @param array       $customAttributes
      * @return mixed
      */
-
     public function display($slug, $template = null, array $customAttributes = []) {
-        $media = $this->getMedia($slug);
-
-        if($media['type'] === 'notFound') {
+        try {
+            $media = $this->entities->findBySlug($slug);
+        } catch(NoResultException $e) {
             echo 'Media `' . $slug . '` Not Found';
-        } else if($media['type'] === Media::TYPE_IMAGE) {
-            $versions = array_where($this->media, function($key, $value) use($slug) {
+            return;
+        }
+
+        if($media->getType() === Media::TYPE_IMAGE) {
+            $versions = array_where($this->getMedia(), function($key, $value) use($slug) {
                 return preg_match('/' . preg_quote($slug, '/') . '\/[0-9]+/', $key);
             });
 
@@ -232,43 +227,43 @@ class HtmlPresenter implements PresenterInterface {
                 unset($versions[$key]);
                 preg_match('/' . preg_quote($slug, '/') . '\/([0-9]+)/', $key, $matches);
                 $versions[$matches[1]] = $value;
-                $srcset[] = $this->getFilename($value['filename']) . ' ' . $matches[1] . 'w';
+                $srcset[] = $this->getFilename($value->getFilename()) . ' ' . $matches[1] . 'w';
             }
 
-            if($media['default']) {
-                $src = $this->getFilename($versions[$media['default']]['filename']);
+            if($media->getDefault()) {
+                $src = $this->getFilename($versions[$media['default']]->getFilename());
             } else {
-                $src = $this->getFilename($media['filename']);
+                $src = $this->getFilename($media->getFilename());
             }
 
             $baseAttributes = [
                 'src' => $src,
                 'srcset' => empty($srcset) ? null : implode(', ', $srcset),
-                'alt' => $media['alt'] ? $media['alt'] : $media['name']
+                'alt' => $media->getAlt() ? $media->getAlt() : $media->getName()
             ];
 
             $template = $this->getTemplate($template, Media::TYPE_IMAGE);
 
             $template($media, $baseAttributes, $customAttributes);
-        } else if($media['type'] === Media::TYPE_AUDIO) {
-            $versions = array_where($this->media, function($key, $value) use($slug) {
+        } else if($media->getType() === Media::TYPE_AUDIO) {
+            $versions = array_where($this->getMedia(), function($key, $value) use($slug) {
                 return preg_match('/' . preg_quote($slug) . '\/[a-z]+/', $key);
             });
 
             $sources = [
-                $this->getMimeTypeFromAudio($media) => $this->getFilename($media['filename'])
+                $this->getMimeTypeFromAudio($media) => $this->getFilename($media->getFilename())
             ];
             foreach($versions as $key => $value) {
-                if($value['type'] === Media::TYPE_AUDIO) {
-                    $sources[$this->getMimeTypeFromAudio($value)] = $this->getFilename($value['filename']);
+                if($value->getType() === Media::TYPE_AUDIO) {
+                    $sources[$this->getMimeTypeFromAudio($value)] = $this->getFilename($value->getFilename());
                 }
             }
 
             $template = $this->getTemplate($template, Media::TYPE_AUDIO);
 
             $template($media, $sources, $customAttributes);
-        } else if($media['type'] === Media::TYPE_DOCUMENT) {
-            $url = $this->getFilename($media['filename']);
+        } else if($media->getType() === Media::TYPE_DOCUMENT) {
+            $url = $this->getFilename($media->getFilename());
             $template = $this->getTemplate($template, Media::TYPE_DOCUMENT);
             $template($media, $url, $customAttributes);
         }

@@ -31,9 +31,11 @@ class DoctrineMediaRepository extends Repository implements MediaRepositoryInter
         try {
             $qb = $this->getQuery(
                 $this->createSelectQuery()
-                ->andWhere('o.slug = :slug')
-                ->setParameter('slug', $slug)
-                ->setMaxResults(1),
+                     ->andWhere('o.slug = :slug')
+                     ->setParameter('slug', $slug)
+                     ->orderBy('o.headVersion', 'ASC')
+                     ->addOrderBy('o.updatedAt', 'DESC')
+                     ->setMaxResults(1),
                 new QueryParameters(['excludeTrashed'])
             );
             return $qb->getSingleResult();
@@ -49,7 +51,7 @@ class DoctrineMediaRepository extends Repository implements MediaRepositoryInter
      */
 
     public function listBySlug() {
-        $results = $this->getQuery($this->createSelectQuery(), new QueryParameters(['excludeTrashed']))->getArrayResult();
+        $results = $this->getQuery($this->createSelectQuery(), new QueryParameters(['excludeTrashed']))->orderBy()->getArrayResult();
 
         foreach($results as $key => $media) {
             unset($results[$key]);
