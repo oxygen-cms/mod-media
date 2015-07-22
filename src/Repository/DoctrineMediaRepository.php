@@ -49,16 +49,16 @@ class DoctrineMediaRepository extends Repository implements MediaRepositoryInter
      *
      * @return array
      */
-
     public function listBySlug() {
-        $results = $this->getQuery($this->createSelectQuery(), new QueryParameters(['excludeTrashed']))->orderBy()->getArrayResult();
+        $results = $this->getQuery($this->createSelectQuery()->orderBy('o.headVersion', 'ASC')->addOrderBy('o.updatedAt', 'DESC'), new QueryParameters(['excludeTrashed']))->getResult();
 
-        foreach($results as $key => $media) {
-            unset($results[$key]);
-            $results[$media['slug']] = $media;
+        $sluggedResults = [];
+
+        foreach(array_reverse($results) as $media) {
+            $sluggedResults[$media->getSlug()] = $media;
         }
 
-        return $results;
+        return $sluggedResults;
     }
 
 }
