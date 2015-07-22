@@ -47,20 +47,26 @@ class HtmlPresenter implements PresenterInterface {
         $this->config = $config;
         $this->entities = $media;
         $this->templates = [
-            'default.image' => function($media, $baseAttributes, $customAttributes) {
+            'default.image' => function(Media $media, array $sources, array $customAttributes) {
+                $baseAttributes = [
+                    'src' => $sources['main'],
+                    'srcset' => $this->composeSrcSetAttribute($sources),
+                    'alt' => $media->getAlt() ? $media->getAlt() : $media->getName()
+                ];
+
                 echo $this->renderImage([$baseAttributes, $customAttributes]);
             },
-            'default.audio' => function($media, $sources, $customAttributes) {
-                echo $this->renderAudio($sources, [['controls' => 'controls'], $customAttributes], 'Audio Not Supported');
+            'default.audio' => function(Media $media, array $sources, array $customAttributes) {
+                echo $this->renderAudio($sources['audioSources'], [['controls' => 'controls'], $customAttributes], 'Audio Not Supported');
             },
-            'default.document' => function($media, $url, $customAttributes) {
-                echo $this->renderLink($media->getCaption(), [['target' => '_blank', 'href' => $url], $customAttributes]);
+            'default.link' => function(Media $media, array $sources, array $customAttributes) {
+                echo $this->renderLink(isset($customAttributes['content']) ? $customAttributes['content'] : $media->getCaption(), [['target' => '_blank', 'href' => $sources['main']], $customAttributes]);
             }
         ];
         $this->defaultTemplate = [
             Media::TYPE_IMAGE => 'default.image',
             Media::TYPE_AUDIO => 'default.audio',
-            Media::TYPE_DOCUMENT => 'default.document'
+            Media::TYPE_DOCUMENT => 'default.link'
         ];
     }
 
@@ -160,6 +166,24 @@ class HtmlPresenter implements PresenterInterface {
     }
 
     /**
+     * Composes the `srcset` attribute from the array of sources
+     *
+     * @param array $sources
+     * @return null|string
+     */
+    public function composeSrcSetAttribute(array $sources) {
+        if(isset($sources['imageSrcSet']) && !empty($sources['imageSrcSet'])) {
+            $srcset = [];
+            foreach($sources['imageSrcSet'] as $width => $filename) {
+                $srcset[] = $filename . ' ' . $width . 'w';
+            }
+            return implode(', ', $srcset);
+        }
+
+        return null;
+    }
+
+    /**
      * Sets a template as default.
      *
      * @param $name
@@ -227,7 +251,7 @@ class HtmlPresenter implements PresenterInterface {
                 unset($versions[$key]);
                 preg_match('/' . preg_quote($slug, '/') . '\/([0-9]+)/', $key, $matches);
                 $versions[$matches[1]] = $value;
-                $srcset[] = $this->getFilename($value->getFilename()) . ' ' . $matches[1] . 'w';
+                $srcset[$matches[1]] = $this->getFilename($value->getFilename());
             }
 
             if($media->getDefault()) {
@@ -236,15 +260,16 @@ class HtmlPresenter implements PresenterInterface {
                 $src = $this->getFilename($media->getFilename());
             }
 
-            $baseAttributes = [
-                'src' => $src,
-                'srcset' => empty($srcset) ? null : implode(', ', $srcset),
-                'alt' => $media->getAlt() ? $media->getAlt() : $media->getName()
-            ];
-
             $template = $this->getTemplate($template, Media::TYPE_IMAGE);
 
-            $template($media, $baseAttributes, $customAttributes);
+            $template(
+                $media,
+                [
+                    'main' => $src,
+                    'imageSrcSet' => $srcset
+                ],
+                $customAttributes
+            );
         } else if($media->getType() === Media::TYPE_AUDIO) {
             $versions = array_where($this->getMedia(), function($key, $value) use($slug) {
                 return preg_match('/' . preg_quote($slug) . '\/[a-z]+/', $key);
@@ -261,11 +286,18 @@ class HtmlPresenter implements PresenterInterface {
 
             $template = $this->getTemplate($template, Media::TYPE_AUDIO);
 
-            $template($media, $sources, $customAttributes);
+            $template(
+                $media,
+                [
+                    'main' => $this->getFilename($media->getFilename()),
+                    'audioSources' => [$sources]
+                ],
+                $customAttributes
+            );
         } else if($media->getType() === Media::TYPE_DOCUMENT) {
             $url = $this->getFilename($media->getFilename());
             $template = $this->getTemplate($template, Media::TYPE_DOCUMENT);
-            $template($media, $url, $customAttributes);
+            $template($media, ['main' => $url], $customAttributes);
         }
     }
 
