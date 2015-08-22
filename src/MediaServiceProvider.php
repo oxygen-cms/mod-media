@@ -33,7 +33,7 @@ class MediaServiceProvider extends BaseServiceProvider {
         $this->publishes([
             __DIR__ . '/../resources/lang' => base_path('resources/lang/vendor/oxygen/mod-media'),
             __DIR__ . '/../resources/views' => base_path('resources/views/vendor/oxygen/mod-media'),
-            __DIR__ . '/../resources/config/config.php' => config_path('oxygen/mod-media.php')
+            __DIR__ . '/../config/config.php' => config_path('oxygen/mod-media.php')
         ]);
 
         $this->app[BlueprintManager::class]->loadDirectory(__DIR__ . '/../resources/blueprints');
