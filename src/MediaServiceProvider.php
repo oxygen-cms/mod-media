@@ -66,7 +66,7 @@ class MediaServiceProvider extends BaseServiceProvider {
 
         $this->app->bind(PresenterInterface::class, HtmlPresenter::class);
         $this->app->singleton(HtmlPresenter::class, function($app) {
-            return new HtmlPresenter($app['cache'], $app['config'], $app[MediaRepositoryInterface::class]);
+            return new HtmlPresenter($app['cache'], $app['config'], $app['url'], $app[MediaRepositoryInterface::class]);
         });
 
         // extend backup functionality

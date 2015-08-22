@@ -2,6 +2,7 @@
 
 namespace OxygenModule\Media\Presenter;
 
+use Illuminate\Contracts\Routing\UrlGenerator;
 use Oxygen\Data\Exception\NoResultException;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use OxygenModule\Media\Entity\Media;
@@ -37,15 +38,17 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Constructs the HtmlPresenter.
      *
-     * @param CacheManager               $cache
-     * @param Repository                 $config
-     * @param MediaRepositoryInterface   $media
+     * @param CacheManager                               $cache
+     * @param Repository                                 $config
+     * @param \Illuminate\Contracts\Routing\UrlGenerator $url
+     * @param MediaRepositoryInterface                   $media
      */
 
-    public function __construct(CacheManager $cache, Repository $config, MediaRepositoryInterface $media) {
+    public function __construct(CacheManager $cache, Repository $config, UrlGenerator $url, MediaRepositoryInterface $media) {
         $this->cache = $cache;
         $this->config = $config;
         $this->entities = $media;
+        $this->url = $url;
         $this->templates = [
             'default.image' => function(Media $media, array $sources, array $customAttributes) {
                 $baseAttributes = [
@@ -73,7 +76,7 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Returns all the media items
      *
-     * @return Media
+     * @return array
      */
     public function getMedia() {
         if($this->media === null) {
@@ -200,8 +203,7 @@ class HtmlPresenter implements PresenterInterface {
      * @param $audio
      * @return string
      */
-
-    protected function getMimeTypeFromAudio($audio) {
+    protected function getMimeTypeFromAudio(Media $audio) {
         $extension = substr(strrchr($audio->getFilename(), "."), 1);
 
         switch($extension) {
@@ -212,17 +214,33 @@ class HtmlPresenter implements PresenterInterface {
             case 'mpga':
                 return 'audio/mp3';
         }
+        return 'application/unknown';
     }
 
     /**
      * Returns a web accessible filename to the resource.
      *
-     * @param $filename
+     * @param string $filename
+     * @param boolean $external
      * @return string
      */
 
-    protected function getFilename($filename) {
-        return $this->config->get('oxygen.mod-media.directory.web') . '/' . $filename;
+    protected function getFilename($filename, $external) {
+        $filename = $this->config->get('oxygen.mod-media.directory.web') . '/' . $filename;
+        if($external) {
+            return $this->url->to($filename);
+        }
+        return $filename;
+    }
+
+    /**
+     * Determines if this resource should be accessed externally
+     *
+     * @param array $attributes
+     * @return string
+     */
+    protected function isExternal($attributes) {
+        return isset($attributes['external']) && $attributes['external'] === true;
     }
 
     /**
@@ -241,6 +259,8 @@ class HtmlPresenter implements PresenterInterface {
             return;
         }
 
+        $external = $this->isExternal($customAttributes);
+
         if($media->getType() === Media::TYPE_IMAGE) {
             $versions = array_where($this->getMedia(), function($key, $value) use($slug) {
                 return preg_match('/' . preg_quote($slug, '/') . '\/[0-9]+/', $key);
@@ -251,13 +271,13 @@ class HtmlPresenter implements PresenterInterface {
                 unset($versions[$key]);
                 preg_match('/' . preg_quote($slug, '/') . '\/([0-9]+)/', $key, $matches);
                 $versions[$matches[1]] = $value;
-                $srcset[$matches[1]] = $this->getFilename($value->getFilename());
+                $srcset[$matches[1]] = $this->getFilename($value->getFilename(), $external);
             }
 
             if($media->getDefault()) {
-                $src = $this->getFilename($versions[$media['default']]->getFilename());
+                $src = $this->getFilename($versions[$media['default']]->getFilename(), $external);
             } else {
-                $src = $this->getFilename($media->getFilename());
+                $src = $this->getFilename($media->getFilename(), $external);
             }
 
             $template = $this->getTemplate($template, Media::TYPE_IMAGE);
@@ -276,11 +296,11 @@ class HtmlPresenter implements PresenterInterface {
             });
 
             $sources = [
-                $this->getMimeTypeFromAudio($media) => $this->getFilename($media->getFilename())
+                $this->getMimeTypeFromAudio($media) => $this->getFilename($media->getFilename(), $external)
             ];
             foreach($versions as $key => $value) {
                 if($value->getType() === Media::TYPE_AUDIO) {
-                    $sources[$this->getMimeTypeFromAudio($value)] = $this->getFilename($value->getFilename());
+                    $sources[$this->getMimeTypeFromAudio($value)] = $this->getFilename($value->getFilename(), $external);
                 }
             }
 
@@ -289,13 +309,13 @@ class HtmlPresenter implements PresenterInterface {
             $template(
                 $media,
                 [
-                    'main' => $this->getFilename($media->getFilename()),
+                    'main' => $this->getFilename($media->getFilename(), $external),
                     'audioSources' => [$sources]
                 ],
                 $customAttributes
             );
         } else if($media->getType() === Media::TYPE_DOCUMENT) {
-            $url = $this->getFilename($media->getFilename());
+            $url = $this->getFilename($media->getFilename(), $external);
             $template = $this->getTemplate($template, Media::TYPE_DOCUMENT);
             $template($media, ['main' => $url], $customAttributes);
         }
@@ -307,11 +327,10 @@ class HtmlPresenter implements PresenterInterface {
      * @param $media
      * @return string
      */
-
     public function preview($media) {
         switch($media->getType()) {
             case Media::TYPE_IMAGE:
-                return '<img src="' . $this->getFilename($media->getFilename()) . '">';
+                return '<img src="' . $this->getFilename($media->getFilename(), false) . '">';
                 break;
             case Media::TYPE_AUDIO:
                 return '<div class="Icon-container"><span class="Icon Icon--gigantic Icon--light Icon-music"></span></div>'; //<audio src="' . $filename . '" preload="none" controls></audio>';
