@@ -63,7 +63,9 @@ class HtmlPresenter implements PresenterInterface {
                 echo $this->renderAudio($sources['audioSources'], [['controls' => 'controls'], $customAttributes], 'Audio Not Supported');
             },
             'default.link' => function(Media $media, array $sources, array $customAttributes) {
-                echo $this->renderLink(isset($customAttributes['content']) ? $customAttributes['content'] : $media->getCaption(), [['target' => '_blank', 'href' => $sources['main']], $customAttributes]);
+                $content = isset($customAttributes['content']) ? $customAttributes['content'] : $media->getCaption();
+                unset($customAttributes['content']);
+                echo $this->renderLink($content, [['target' => '_blank', 'href' => $sources['main']], $customAttributes]);
             }
         ];
         $this->defaultTemplate = [
@@ -260,6 +262,7 @@ class HtmlPresenter implements PresenterInterface {
         }
 
         $external = $this->isExternal($customAttributes);
+        unset($customAttributes['external']);
 
         if($media->getType() === Media::TYPE_IMAGE) {
             $versions = array_where($this->getMedia(), function($key, $value) use($slug) {
