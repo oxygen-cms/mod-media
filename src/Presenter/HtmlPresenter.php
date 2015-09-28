@@ -43,7 +43,6 @@ class HtmlPresenter implements PresenterInterface {
      * @param \Illuminate\Contracts\Routing\UrlGenerator $url
      * @param MediaRepositoryInterface                   $media
      */
-
     public function __construct(CacheManager $cache, Repository $config, UrlGenerator $url, MediaRepositoryInterface $media) {
         $this->cache = $cache;
         $this->config = $config;
