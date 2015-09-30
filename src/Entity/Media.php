@@ -5,6 +5,8 @@ namespace OxygenModule\Media\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping AS ORM;
 use Oxygen\Data\Behaviour\Accessors;
+use Oxygen\Data\Behaviour\CacheInvalidator;
+use Oxygen\Data\Behaviour\CacheInvalidatorInterface;
 use Oxygen\Data\Behaviour\Fillable;
 use Oxygen\Data\Behaviour\PrimaryKey;
 use Oxygen\Data\Behaviour\PrimaryKeyInterface;
@@ -19,9 +21,9 @@ use Oxygen\Data\Validation\Validatable;
  * @ORM\HasLifecycleCallbacks
  */
 
-class Media implements PrimaryKeyInterface, Validatable {
+class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterface {
 
-    use PrimaryKey, Timestamps, SoftDeletes, Versions;
+    use PrimaryKey, Timestamps, SoftDeletes, Versions, CacheInvalidator;
     use Accessors, Fillable;
 
     const TYPE_IMAGE = 0;

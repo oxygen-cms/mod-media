@@ -2,18 +2,20 @@
 
 namespace OxygenModule\Media\Presenter;
 
+use OxygenModule\Media\Entity\Media;
+
 interface PresenterInterface {
 
     /**
      * Displays the Media.
      *
-     * @param string        $slug
+     * @param Media         $media
      * @param string|null   $template
      * @param array         $attributes
      * @return mixed
      */
 
-    public function display($slug, $template = null, array $attributes = []);
+    public function display(Media $media, $template = null, array $attributes = []);
 
     /**
      * Previews the given media item.

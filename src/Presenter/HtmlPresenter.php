@@ -3,7 +3,6 @@
 namespace OxygenModule\Media\Presenter;
 
 use Illuminate\Contracts\Routing\UrlGenerator;
-use Oxygen\Data\Exception\NoResultException;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use OxygenModule\Media\Entity\Media;
 use Illuminate\Cache\CacheManager;
@@ -247,31 +246,24 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Displays the Media.
      *
-     * @param string      $slug
+     * @param Media      $media
      * @param string|null $template
      * @param array       $customAttributes
      * @return mixed
      */
-    public function display($slug, $template = null, array $customAttributes = []) {
-        try {
-            $media = $this->entities->findBySlug($slug);
-        } catch(NoResultException $e) {
-            echo 'Media `' . $slug . '` Not Found';
-            return;
-        }
-
+    public function display(Media $media, $template = null, array $customAttributes = []) {
         $external = $this->isExternal($customAttributes);
         unset($customAttributes['external']);
 
         if($media->getType() === Media::TYPE_IMAGE) {
-            $versions = array_where($this->getMedia(), function($key, $value) use($slug) {
-                return preg_match('/' . preg_quote($slug, '/') . '\/[0-9]+/', $key);
+            $versions = array_where($this->getMedia(), function($key, $value) use($media) {
+                return preg_match('/' . preg_quote($media->getSlug(), '/') . '\/[0-9]+/', $key);
             });
-
+            
             $srcset = [];
             foreach($versions as $key => $value) {
                 unset($versions[$key]);
-                preg_match('/' . preg_quote($slug, '/') . '\/([0-9]+)/', $key, $matches);
+                preg_match('/' . preg_quote($media->getSlug(), '/') . '\/([0-9]+)/', $key, $matches);
                 $versions[$matches[1]] = $value;
                 $srcset[$matches[1]] = $this->getFilename($value->getFilename(), $external);
             }
@@ -293,8 +285,8 @@ class HtmlPresenter implements PresenterInterface {
                 $customAttributes
             );
         } else if($media->getType() === Media::TYPE_AUDIO) {
-            $versions = array_where($this->getMedia(), function($key, $value) use($slug) {
-                return preg_match('/' . preg_quote($slug) . '\/[a-z]+/', $key);
+            $versions = array_where($this->getMedia(), function($key, $value) use($media) {
+                return preg_match('/' . preg_quote($media->getSlug()) . '\/[a-z]+/', $key);
             });
 
             $sources = [
