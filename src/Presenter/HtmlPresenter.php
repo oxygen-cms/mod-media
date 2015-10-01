@@ -259,7 +259,7 @@ class HtmlPresenter implements PresenterInterface {
             $versions = array_where($this->getMedia(), function($key, $value) use($media) {
                 return preg_match('/' . preg_quote($media->getSlug(), '/') . '\/[0-9]+/', $key);
             });
-            
+
             $srcset = [];
             foreach($versions as $key => $value) {
                 unset($versions[$key]);
