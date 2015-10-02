@@ -40,17 +40,7 @@ class MediaServiceProvider extends BaseServiceProvider {
 
         // Extends Blade compiler
         $this->app['blade.compiler']->directive('media', function($expression) {
-            return '<?php
-            try {
-                $__item = app(\'' . MediaRepositoryInterface::class . '\')->findBySlug' . $expression . ';
-                if(method_exists($__env, \'viewDependsOnEntity\')) {
-                    $__env->viewDependsOnEntity($__item);
-                }
-                echo app(\'' . HtmlPresenter::class . '\')->display($__item);
-            } catch(\Oxygen\Data\Exception\NoResultException $e) {
-                echo \'Media ' . e($expression) . ' Not Found\';
-            }
-            ?>';
+            return '<?php echo app(\'' . HtmlPresenter::class . '\')->present' . $expression . '; ?>';
         });
     }
 

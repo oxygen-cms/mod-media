@@ -9,12 +9,21 @@ interface PresenterInterface {
     /**
      * Displays the Media.
      *
+     * @param $slug         $media
+     * @param string|null   $template
+     * @param array         $attributes
+     * @return mixed
+     */
+    public function present($slug, $template = null, array $attributes = []);
+
+    /**
+     * Displays the Media.
+     *
      * @param Media         $media
      * @param string|null   $template
      * @param array         $attributes
      * @return mixed
      */
-
     public function display(Media $media, $template = null, array $attributes = []);
 
     /**
@@ -23,7 +32,6 @@ interface PresenterInterface {
      * @param $media
      * @return string
      */
-
     public function preview($media);
 
 }

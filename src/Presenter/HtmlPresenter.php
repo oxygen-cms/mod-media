@@ -3,6 +3,7 @@
 namespace OxygenModule\Media\Presenter;
 
 use Illuminate\Contracts\Routing\UrlGenerator;
+use Oxygen\Data\Exception\NoResultException;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use OxygenModule\Media\Entity\Media;
 use Illuminate\Cache\CacheManager;
@@ -312,6 +313,27 @@ class HtmlPresenter implements PresenterInterface {
             $url = $this->getFilename($media->getFilename(), $external);
             $template = $this->getTemplate($template, Media::TYPE_DOCUMENT);
             $template($media, ['main' => $url], $customAttributes);
+        }
+    }
+
+    /**
+     * Displays the Media.
+     *
+     * @param string      $slug
+     * @param string|null $template
+     * @param array       $customAttributes
+     * @return mixed
+     */
+    public function present($slug, $template = null, array $customAttributes = []) {
+        global $__env;
+        try {
+            $item = $this->entities->findBySlug($slug);
+            if(isset($__env) && method_exists($__env, 'viewDependsOnEntity')) {
+                $__env->viewDependsOnEntity($item);
+            }
+            return $this->display($item, $template, $customAttributes);
+        } catch(NoResultException $e) {
+            return 'Media `' . e($slug) . '`` Not Found';
         }
     }
 
