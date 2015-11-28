@@ -40,7 +40,9 @@ class MediaWorker implements WorkerInterface {
         $baseDir = $this->config->get('oxygen.mod-media.directory.filesystem');
         foreach($media as $item) {
             $fullFile = $baseDir . '/' . $item['filename'];
-            $files[$fullFile] = $this->prefix . $item['filename'];
+            if($this->files->exists($fullFile)) {
+                $files[$fullFile] = $this->prefix . $item['filename'];
+            }
         }
         return $files;
     }
