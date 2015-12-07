@@ -18,7 +18,7 @@ Blueprint::make('Media', function($blueprint) {
         'item' => [
             'getUse',
             'getRaw',
-            'getEditImage,More' => ['getInfo', 'getUpdate', 'postMakeResponsive', 'deleteDelete', 'postRestore', 'deleteForce'],
+            'getUpdate,More' => ['getInfo', 'getEditImage', 'postMakeResponsive', 'deleteDelete', 'postRestore', 'deleteForce'],
             'Versions' => ['postNewVersion', 'postMakeHeadVersion']
         ],
         'versionList' => [

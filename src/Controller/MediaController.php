@@ -207,14 +207,21 @@ class MediaController extends VersionableCrudController {
                 $success = false;
             }
 
-            $text .= implode('<br>', $return->all());
+            $text .= implode('<br>', $return->all()) . '<br>';
         }
 
         $this->repository->flush();
 
-        return Response::notification(
-            new Notification($text, ($success) ? Notification::SUCCESS : Notification::FAILED)
-        );
+        if($success) {
+            return Response::notification(
+                new Notification($text),
+                ['redirect' => $this->blueprint->getRouteName('getList')]
+            );
+        } else {
+            return Response::notification(
+                new Notification($text, Notification::FAILED)
+            );
+        }
     }
 
     /**

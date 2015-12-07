@@ -32,6 +32,7 @@
     <?php
         $form = new Form($blueprint->getAction('postUpload'));
         $form->setUseMultipartFormData(true);
+        $form->setAsynchronous(true);
 
         $form->addContent(View::make('oxygen/mod-media::uploadForm', ['fields' => $fields, 'media' => $media]));
 
