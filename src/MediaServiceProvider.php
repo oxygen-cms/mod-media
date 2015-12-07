@@ -55,14 +55,10 @@ class MediaServiceProvider extends BaseServiceProvider {
         // Repositories
         $this->app->bind(MediaRepositoryInterface::class, DoctrineMediaRepository::class);
 
-        $entities = function($entities) {
+        $this->extendEntityManager(function($entities) {
             $entities->getEventManager()
                      ->addEventSubscriber(new MediaSubscriber($this->app['files'], $this->app['config'], $this->app['cache']));
-        };
-        if($this->app->resolved(EntityManager::class)) {
-            $entities($this->app[EntityManager::class]);
-        }
-        $this->app->resolving(EntityManager::class, $entities);
+        });
 
         $this->app->bind(PresenterInterface::class, HtmlPresenter::class);
         $this->app->singleton(HtmlPresenter::class, function($app) {
