@@ -333,6 +333,9 @@ class HtmlPresenter implements PresenterInterface {
             }
             return $this->display($item, $template, $customAttributes);
         } catch(NoResultException $e) {
+            if(isset($__env) && method_exists($__env, 'viewDependsOnAllEntities')) {
+                $__env->viewDependsOnAllEntities(Media::class);
+            }
             return 'Media `' . e($slug) . '`` Not Found';
         }
     }
