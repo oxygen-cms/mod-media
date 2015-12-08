@@ -35,6 +35,10 @@ class HtmlPresenter implements PresenterInterface {
 
     protected $defaultTemplate;
 
+    protected $useAbsoluteURLs;
+
+    protected $tagStyle;
+
     /**
      * Constructs the HtmlPresenter.
      *
@@ -48,23 +52,25 @@ class HtmlPresenter implements PresenterInterface {
         $this->config = $config;
         $this->entities = $media;
         $this->url = $url;
+        $this->tagStyle = 'html5';
+        $this->useAbsoluteURLs = false;
         $this->templates = [
-            'default.image' => function(Media $media, array $sources, array $customAttributes) {
+            'default.image' => function(HtmlPresenter $presenter, Media $media, array $sources, array $customAttributes) {
                 $baseAttributes = [
                     'src' => $sources['main'],
-                    'srcset' => $this->composeSrcSetAttribute($sources),
+                    'srcset' => $presenter->composeSrcSetAttribute($sources),
                     'alt' => $media->getAlt() ? $media->getAlt() : $media->getName()
                 ];
 
-                echo $this->renderImage([$baseAttributes, $customAttributes]);
+                echo $presenter->renderImage([$baseAttributes, $customAttributes]);
             },
-            'default.audio' => function(Media $media, array $sources, array $customAttributes) {
-                echo $this->renderAudio($sources['audioSources'], [['controls' => 'controls'], $customAttributes], 'Audio Not Supported');
+            'default.audio' => function(HtmlPresenter $presenter, Media $media, array $sources, array $customAttributes) {
+                echo $presenter->renderAudio($sources['audioSources'], [['controls' => 'controls'], $customAttributes], 'Audio Not Supported');
             },
-            'default.link' => function(Media $media, array $sources, array $customAttributes) {
+            'default.link' => function(HtmlPresenter $presenter, Media $media, array $sources, array $customAttributes) {
                 $content = isset($customAttributes['content']) ? $customAttributes['content'] : $media->getCaption();
                 unset($customAttributes['content']);
-                echo $this->renderLink($content, [['target' => '_blank', 'href' => $sources['main']], $customAttributes]);
+                echo $presenter->renderLink($content, [['target' => '_blank', 'href' => $sources['main']], $customAttributes]);
             }
         ];
         $this->defaultTemplate = [
@@ -193,8 +199,7 @@ class HtmlPresenter implements PresenterInterface {
      * @param $name
      * @param $type
      */
-
-    public function setDefaultTemplate($name, $type = Media::TYPE_IMAGE) {
+    public function setDefaultTemplate($name, $type) {
         $this->defaultTemplate[$type] = $name;
     }
 
@@ -278,6 +283,7 @@ class HtmlPresenter implements PresenterInterface {
             $template = $this->getTemplate($template, Media::TYPE_IMAGE);
 
             $template(
+                $this,
                 $media,
                 [
                     'main' => $src,
@@ -302,6 +308,7 @@ class HtmlPresenter implements PresenterInterface {
             $template = $this->getTemplate($template, Media::TYPE_AUDIO);
 
             $template(
+                $this,
                 $media,
                 [
                     'main' => $this->getFilename($media->getFilename(), $external),
@@ -312,7 +319,7 @@ class HtmlPresenter implements PresenterInterface {
         } else if($media->getType() === Media::TYPE_DOCUMENT) {
             $url = $this->getFilename($media->getFilename(), $external);
             $template = $this->getTemplate($template, Media::TYPE_DOCUMENT);
-            $template($media, ['main' => $url], $customAttributes);
+            $template($this, $media, ['main' => $url], $customAttributes);
         }
     }
 
@@ -330,6 +337,9 @@ class HtmlPresenter implements PresenterInterface {
             $item = $this->entities->findBySlug($slug);
             if(isset($__env) && method_exists($__env, 'viewDependsOnEntity')) {
                 $__env->viewDependsOnEntity($item);
+            }
+            if($this->useAbsoluteURLs = true) {
+                $customAttributes['external'] = true;
             }
             return $this->display($item, $template, $customAttributes);
         } catch(NoResultException $e) {
@@ -359,4 +369,32 @@ class HtmlPresenter implements PresenterInterface {
         }
     }
 
+    /**
+     * Whether the presenter should use absolute URLs to the resource
+     *
+     * @param $use
+     * @return void
+     */
+    public function setUseAbsoluteURLs($use) {
+        $this->useAbsoluteURLs = $use;
+    }
+
+    /**
+     * Whether the presenter should use html4/html5 etc
+     *
+     * @param $style
+     * @return void
+     */
+    public function setStyle($style) {
+        $this->tagStyle = $style;
+    }
+
+    /**
+     * Whether the presenter should use html4/html5 etc
+     *
+     * @return string
+     */
+    public function getStyle() {
+        return $this->tagStyle;
+    }
 }

@@ -7,6 +7,14 @@ use OxygenModule\Media\Entity\Media;
 interface PresenterInterface {
 
     /**
+     * Whether the presenter should use absolute URLs to the resource
+     *
+     * @param $use
+     * @return void
+     */
+    public function setUseAbsoluteURLs($use);
+
+    /**
      * Displays the Media.
      *
      * @param $slug         $media
