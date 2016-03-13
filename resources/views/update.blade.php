@@ -2,13 +2,6 @@
 
 @section('content')
 
-<?php
-
-    $title = Lang::get('oxygen/crud::ui.resource.update', [
-        'resource' => $blueprint->getDisplayName()
-    ]);
-?>
-
 @include('oxygen/crud::versionable.itemHeader', ['blueprint' => $blueprint, 'fields' => $fields, 'item' => $item, 'title' => $title])
 
 

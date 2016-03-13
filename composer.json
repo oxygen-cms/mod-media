@@ -16,7 +16,7 @@
     "require": {
         "php": ">=5.5.9",
         "oxygen/core": "~0.4.0",
-        "oxygen/crud": "~0.2.0",
+        "oxygen/crud": "~0.3.0",
         "oxygen/data": "~0.7.0",
         "intervention/image":  "~2.0",
         "illuminate/support": "~5.1.0"
