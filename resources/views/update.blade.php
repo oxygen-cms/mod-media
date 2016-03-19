@@ -42,6 +42,6 @@
 
 @include('oxygen/crud::basic.updateForm', ['blueprint' => $blueprint, 'item' => $item, 'fields' => $crudFields, 'extraFields' => [$versionRow]])
 
-@include('oxygen/crud::versionable.versions', ['item' => $item])
+@include('oxygen/crud::versionable.versions', ['item' => $item, 'fields' => $crudFields])
 
 @stop
