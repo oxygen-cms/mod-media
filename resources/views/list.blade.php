@@ -48,7 +48,7 @@
     <div class="Row--layout Row--equalCells">
         <?php
         foreach($items as $item):
-            $itemHeader = Header::fromBlueprint($blueprint, $fields, ['model' => $item, 'span' => 'oneThird'], Header::TYPE_BLOCK, 'item');
+            $itemHeader = Header::fromBlueprint($blueprint, $crudFields, ['model' => $item, 'span' => 'oneThird'], Header::TYPE_BLOCK, 'item');
 
             if(method_exists($item, 'isPublished')) {
                 $icon = $item->isPublished() ? 'globe' : 'pencil-square';

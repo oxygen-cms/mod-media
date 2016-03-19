@@ -10,7 +10,6 @@ use Lang;
 use Response;
 use Illuminate\Support\Str;
 use Validator;
-use View;
 
 use Intervention\Image\Image;
 use OxygenModule\Media\MediaFieldSet;
@@ -52,11 +51,9 @@ class MediaController extends VersionableCrudController {
         $items = $this->repository->paginate(25, $queryParameters == null ? new QueryParameters(['excludeTrashed', 'excludeVersions'], 'id', QueryParameters::DESCENDING) : $queryParameters);
 
         // render the view
-        return View::make('oxygen/mod-media::list', [
+        return view('oxygen/mod-media::list', [
             'items' => $items,
-            'isTrash' => false,
-            'fields' => $this->crudFields,
-            'title' => Lang::get('oxygen/crud::ui.resource.list')
+            'isTrash' => false
         ]);
     }
 
@@ -131,13 +128,8 @@ class MediaController extends VersionableCrudController {
     public function getUpdate($item) {
         $item = $this->getItem($item);
 
-        return View::make('oxygen/mod-media::update', [
-            'item' => $item,
-            'fields' => $this->crudFields,
-            'title' => Lang::get('oxygen/crud::ui.resource.update', [
-                'name' => $item->getAttribute($this->crudFields->getTitleFieldName())
-            ])
-        ]);
+        return view('oxygen/mod-media::update')
+            ->with('item', $item);
     }
 
     /**
@@ -153,13 +145,8 @@ class MediaController extends VersionableCrudController {
             return Response::notification(new Notification(Lang::get('oxygen/mod-media::messages.onlyAbleToEditImages'), Notification::FAILED));
         }
 
-        return View::make('oxygen/mod-media::editImage', [
-            'item' => $item,
-            'fields' => $this->crudFields,
-            'title' => Lang::get('oxygen/mod-media::ui.editImage.title', [
-                'name' => $item->getAttribute($this->crudFields->getTitleFieldName())
-            ])
-        ]);
+        return view('oxygen/mod-media::editImage')
+            ->with('item', $item);
     }
 
     /**
@@ -168,11 +155,8 @@ class MediaController extends VersionableCrudController {
      * @return \Illuminate\Http\Response
      */
     public function getUpload() {
-        return View::make('oxygen/mod-media::upload', [
-            'fields' => $this->crudFields,
-            'media' => $this->repository->listKeysAndValues('id', 'name', new QueryParameters(['excludeVersions'])),
-            'title' => Lang::get('oxygen/mod-media::ui.upload.title')
-        ]);
+        return view('oxygen/mod-media::upload')
+            ->with('media', $this->repository->listKeysAndValues('id', 'name', new QueryParameters(['excludeVersions'])));
     }
 
     /**

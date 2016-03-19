@@ -2,7 +2,17 @@
 
 @section('content')
 
-@include('oxygen/crud::versionable.itemHeader', ['blueprint' => $blueprint, 'fields' => $fields, 'item' => $item, 'title' => $title])
+<?php
+    $title = Lang::get('oxygen/crud::ui.namedResource.update', [
+        'name' => $item->getAttribute($crudFields->getTitleFieldName())
+    ]);
+
+    $sectionTitle = Lang::get('oxygen/crud::ui.resource.update', [
+        'resource' => $blueprint->getDisplayName()
+    ]);
+?>
+
+@include('oxygen/crud::versionable.itemHeader', ['blueprint' => $blueprint, 'fields' => $crudFields, 'item' => $item, 'title' => $sectionTitle])
 
 
 <div class="Block Block--mini">
@@ -30,7 +40,7 @@
 
 ?>
 
-@include('oxygen/crud::basic.updateForm', ['blueprint' => $blueprint, 'item' => $item, 'fields' => $fields, 'extraFields' => [$versionRow]])
+@include('oxygen/crud::basic.updateForm', ['blueprint' => $blueprint, 'item' => $item, 'fields' => $crudFields, 'extraFields' => [$versionRow]])
 
 @include('oxygen/crud::versionable.versions', ['item' => $item])
 

@@ -2,7 +2,15 @@
 
 @section('content')
 
-@include('oxygen/crud::versionable.itemHeader', ['blueprint' => $blueprint, 'fields' => $fields, 'item' => $item, 'title' => $title])
+<?php
+    $sectionTitle = Lang::get('oxygen/mod-media::ui.editImage.title');
+    $title = Lang::get('oxygen/mod-media::ui.editImage.namedTitle', [
+        'name' => $item->getAttribute($crudFields->getTitleFieldName())
+    ]);
+?>
+
+
+@include('oxygen/crud::versionable.itemHeader', ['blueprint' => $blueprint, 'fields' => $crudFields, 'item' => $item, 'title' => $sectionTitle])
 
 <!-- =====================
              INFO

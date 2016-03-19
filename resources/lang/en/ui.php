@@ -13,7 +13,8 @@ return [
         'title' => 'Upload'
     ],
     'editImage' => [
-        'title' => 'Edit :name'
+        'namedTitle' => 'Edit :name',
+        'title' => 'Edit Image'
     ]
 
 ];

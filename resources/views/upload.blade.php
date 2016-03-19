@@ -7,9 +7,11 @@
     use Oxygen\Core\Html\Form\Form;
     use Oxygen\Core\Html\Header\Header;
 
+    $title = Lang::get('oxygen/mod-media::ui.upload.title');
+
     $header = Header::fromBlueprint(
         $blueprint,
-        'Upload'
+        $title
     );
 
     $header->setBackLink(URL::route($blueprint->getRouteName('getList')));
@@ -34,7 +36,7 @@
         $form->setUseMultipartFormData(true);
         $form->setAsynchronous(true);
 
-        $form->addContent(View::make('oxygen/mod-media::uploadForm', ['fields' => $fields, 'media' => $media]));
+        $form->addContent(View::make('oxygen/mod-media::uploadForm', ['fields' => $crudFields, 'media' => $media]));
 
         echo $form->render();
     ?>
