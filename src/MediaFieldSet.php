@@ -34,10 +34,6 @@ class MediaFieldSet extends FieldSet {
                 'editable'  => true
             ],
             [
-                'name'      => 'alt',
-                'editable'  => true
-            ],
-            [
                 'name'      => 'caption',
                 'type'      => 'textarea',
                 'editable'  => true,

@@ -25,7 +25,7 @@
         <div class="ImageEditor-content">
             <img
                 src="{{{ URL::route($blueprint->getRouteName('getRaw'), $item->getId()) }}}"
-                alt="{{{ $item->getAlt() }}}"
+                alt="{{{ $item->getCaption() }}}"
                 class="ImageEditor-image"
                 data-root="{{{ URL::route($blueprint->getRouteName('getRaw'), $item->getId()) }}}">
         </div>

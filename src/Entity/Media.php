@@ -55,12 +55,6 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     protected $author;
 
     /**
-     * @ORM\Column(type="string", nullable=true)
-     */
-
-    protected $alt;
-
-    /**
      * @ORM\Column(type="text", nullable=true)
      */
 
@@ -183,9 +177,6 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
             'author' => [
                 'name',
                 'max:255'
-            ],
-            'alt' => [
-                'max:150'
             ],
             'default' => [
                 'integer'

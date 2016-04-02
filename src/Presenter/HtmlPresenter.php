@@ -59,7 +59,7 @@ class HtmlPresenter implements PresenterInterface {
                 $baseAttributes = [
                     'src' => $sources['main'],
                     'srcset' => $presenter->composeSrcSetAttribute($sources),
-                    'alt' => $media->getAlt() ? $media->getAlt() : $media->getName()
+                    'alt' => $media->getCaption() ? $media->getCaption() : $media->getName()
                 ];
 
                 echo $presenter->renderImage([$baseAttributes, $customAttributes]);
@@ -68,7 +68,7 @@ class HtmlPresenter implements PresenterInterface {
                 echo $presenter->renderAudio($sources['audioSources'], [['controls' => 'controls'], $customAttributes], 'Audio Not Supported');
             },
             'default.link' => function(HtmlPresenter $presenter, Media $media, array $sources, array $customAttributes) {
-                $content = isset($customAttributes['content']) ? $customAttributes['content'] : $media->getCaption();
+                $content = isset($customAttributes['content']) ? $customAttributes['content'] : ($media->getCaption() ? $media->getCaption() : $media->getName());
                 unset($customAttributes['content']);
                 echo $presenter->renderLink($content, [['target' => '_blank', 'href' => $sources['main']], $customAttributes]);
             }
