@@ -2,8 +2,8 @@
 
 namespace OxygenModule\Media\Repository;
 
+use Doctrine\ORM\NoResultException as DoctrineNoResultException;
 use OxygenModule\Media\Entity\Media;
-use Exception;
 use Oxygen\Data\Exception\NoResultException;
 use Oxygen\Data\Repository\Doctrine\Repository;
 use Oxygen\Data\Repository\Doctrine\SoftDeletes;
@@ -25,22 +25,23 @@ class DoctrineMediaRepository extends Repository implements MediaRepositoryInter
      * Finds an Media item based upon the slug.
      *
      * @param string $slug
+     * @throws NoResultException
      * @return Media
      */
     public function findBySlug($slug) {
+        $q = $this->getQuery(
+            $this->createSelectQuery()
+                 ->andWhere('o.slug = :slug')
+                 ->setParameter('slug', $slug)
+                 ->orderBy('o.headVersion', 'ASC')
+                 ->addOrderBy('o.updatedAt', 'DESC')
+                 ->setMaxResults(1),
+            new QueryParameters(['excludeTrashed'])
+        );
         try {
-            $qb = $this->getQuery(
-                $this->createSelectQuery()
-                     ->andWhere('o.slug = :slug')
-                     ->setParameter('slug', $slug)
-                     ->orderBy('o.headVersion', 'ASC')
-                     ->addOrderBy('o.updatedAt', 'DESC')
-                     ->setMaxResults(1),
-                new QueryParameters(['excludeTrashed'])
-            );
-            return $qb->getSingleResult();
-        } catch(Exception $e) {
-            throw new NoResultException($e, $this->replaceQueryParameters($qb->getDQL(), $qb->getParameters()));
+            return $q->getSingleResult();
+        } catch(DoctrineNoResultException $e) {
+            throw $this->makeNoResultException($e, $q);
         }
     }
 
