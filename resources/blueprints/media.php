@@ -1,5 +1,6 @@
 <?php
 
+use Oxygen\Core\Http\Method;
 use OxygenModule\Media\Entity\Media;
 use Oxygen\Core\Html\Dialog\Dialog;
 use Oxygen\Core\Html\Toolbar\Factory\VoidButtonToolbarItemFactory;
@@ -46,7 +47,7 @@ Blueprint::make('Media', function($blueprint) {
     $blueprint->makeAction([
         'name'      => 'postUpload',
         'pattern'   => 'upload',
-        'method'    => 'post'
+        'method'    => Method::POST
     ]);
 
     $blueprint->makeAction([

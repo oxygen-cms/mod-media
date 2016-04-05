@@ -169,9 +169,9 @@ class MediaController extends VersionableCrudController {
         if(!$input->hasFile('file')) {
             // guess if post_max_size has been reached
             if (empty($_FILES) && empty($_POST) && isset($_SERVER['REQUEST_METHOD']) && strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
-                $message = Lang::get('oxygen/mod-media::messages.upload.tooLarge');
+                $message = Lang::get('oxygen/crud::messages.upload.tooLarge');
             } else {
-                $message = Lang::get('oxygen/mod-media::messages.upload.noFiles');
+                $message = Lang::get('oxygen/crud::messages.upload.noFiles');
             }
 
             return Response::notification(
@@ -224,7 +224,7 @@ class MediaController extends VersionableCrudController {
     protected function makeFromFile(UploadedFile $file, $name = null, $slug = null, $headVersion = null) {
         if(!$file->isValid()) {
             $messages = new MessageBag();
-            return $messages->add('exists', Lang::get('oxygen/mod-media::messages.upload.failed', [
+            return $messages->add('exists', Lang::get('oxygen/crud::messages.upload.failed', [
                 'name' => $file->getClientOriginalName(),
                 'error' => $file->getError()
             ]));
@@ -280,7 +280,7 @@ class MediaController extends VersionableCrudController {
             $file->move(Config::get('oxygen.mod-media.directory.filesystem'), $media->getFilename());
 
             $messages = new MessageBag();
-            return $messages->add('success', Lang::get('oxygen/mod-media::messages.upload.success', [
+            return $messages->add('success', Lang::get('oxygen/crud::messages.upload.success', [
                 'name' => $file->getClientOriginalName()
             ]));
         } catch(InvalidEntityException $e) {
