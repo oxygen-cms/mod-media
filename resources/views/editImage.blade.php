@@ -29,7 +29,7 @@
                 class="ImageEditor-image"
                 data-root="{{{ URL::route($blueprint->getRouteName('getRaw'), $item->getId()) }}}">
         </div>
-        <div class="ImageEditor-panel">
+        <div class="ImageEditor-panel TabSwitcher">
             <div class="ImageEditor-toolbar Row--visual">
                 <div class="ButtonTabGroup TabSwitcher-tabs" role="tablist">
                     <button
@@ -57,7 +57,7 @@
                 <form
                     action="{{{ URL::route($blueprint->getRouteName('getRaw'), $item->getId()) }}}"
                     method="GET"
-                    class="Form--singleColumn Form--dark Form--warnBeforeExit ImageEditor-form--simple ImageEditor-padded TabSwitcher-tabs TabSwitcher-content"
+                    class="Form--singleColumn Form--dark Form--warnBeforeExit ImageEditor-form--simple ImageEditor-padded TabSwitcher TabSwitcher-tabs TabSwitcher-content"
                     data-tab="simple">
                     <button
                        type="button" class="Accordion-section"
@@ -183,7 +183,7 @@
                 <form
                     action="{{{ URL::route($blueprint->getRouteName('getRaw'), $item->getId()) }}}"
                     method="GET"
-                    class="Form--singleColumn Form--warnBeforeExit Form--dark ImageEditor-form--advanced TabSwitcher-tabs TabSwitcher-content"
+                    class="Form--singleColumn Form--warnBeforeExit Form--dark ImageEditor-form--advanced"
                     data-tab="advanced">
                     <?php
                         $codeEditor = new Editor('macro', "{\n\t\n}", Editor::TYPE_MINI, ['rows' => 10, 'class' => 'Editor--fullWidth'], [

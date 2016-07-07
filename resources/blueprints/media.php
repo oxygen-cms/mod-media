@@ -1,8 +1,12 @@
 <?php
 
+use Oxygen\Core\Action\Group;
+use Oxygen\Core\Action\Action;
+use Oxygen\Core\Action\Factory\ActionFactory;
 use Oxygen\Core\Http\Method;
 use OxygenModule\Media\Entity\Media;
 use Oxygen\Core\Html\Dialog\Dialog;
+use Oxygen\Core\Html\Toolbar\ActionToolbarItem;
 use Oxygen\Core\Html\Toolbar\Factory\VoidButtonToolbarItemFactory;
 use Oxygen\Crud\BlueprintTrait\VersionableCrudTrait;
 use OxygenModule\Media\Controller\MediaController;
@@ -19,7 +23,7 @@ Blueprint::make('Media', function($blueprint) {
         'item' => [
             'getUse',
             'getRaw',
-            'getUpdate,More' => ['getInfo', 'getEditImage', 'postMakeResponsive', 'deleteDelete', 'postRestore', 'deleteForce'],
+            'getUpdate,More' => ['getView', 'getInfo', 'getEditImage', 'postMakeResponsive', 'deleteDelete', 'postRestore', 'deleteForce'],
             'Versions' => ['postNewVersion', 'postMakeHeadVersion']
         ],
         'versionList' => [
@@ -64,6 +68,33 @@ Blueprint::make('Media', function($blueprint) {
             $item->shouldRenderBasic($arguments) &&
             $arguments['model']->getType() === Media::TYPE_IMAGE;
     }
+    ]);
+
+    $blueprint->makeAction(
+        [
+            'name'          => 'getView',
+            'pattern'       => 'media/{slug}.{extension}',
+            'group'         => new Group('media'),
+            'routeParametersCallback' => function(Action $action, array $options) {
+                return [
+                    $options['model']->getSlug()
+                ];
+            },
+            'customRouteCallback' => function(Action $action, $route) {
+                $route->where('slug', '([a-z0-9/\-]+)');
+            }
+        ],
+        new ActionFactory()
+    );
+    $blueprint->makeToolbarItem([
+        'action'        => 'getView',
+        'label'         => 'View',
+        'icon'          => 'file-image-o',
+        'shouldRenderCallback' => function(ActionToolbarItem $item, array $arguments) {
+            return
+                $item->shouldRenderBasic($arguments) &&
+                $arguments['model']->isHead();
+        }
     ]);
 
     $blueprint->makeAction([
@@ -114,6 +145,15 @@ Blueprint::make('Media', function($blueprint) {
         'icon'          => 'magic',
         'dialog'        => new Dialog(Lang::get('oxygen/mod-media::dialogs.use'), Dialog::TYPE_ALERT)
     ], new VoidButtonToolbarItemFactory())->addDynamicCallback(function($toolbarItem, $arguments) {
-        $toolbarItem->dialog = new Dialog(Lang::get('oxygen/mod-media::dialogs.use') . '<br><code>@media(\'' . $arguments['model']->getSlug() . '\')</code>', Dialog::TYPE_ALERT);
+        $slug = $arguments['model']->getSlug();
+        $link = \Config::get('app.url') . "/media/$slug." . $arguments['model']->getExtension();
+        $msg = Lang::get(
+            'oxygen/mod-media::dialogs.use',
+            [
+                'internal-code' => "@media('$slug')",
+                'link' => $link
+            ]
+        );
+        $toolbarItem->dialog = new Dialog($msg, Dialog::TYPE_ALERT);
     });
 });

@@ -144,12 +144,19 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
 
     public function makeNewFilename($extension = null) {
         if($extension === null) {
-            $parts = explode('.', $this->filename);
-            $extension = end($parts);
+            $extension = $this->getExtension();
         }
 
         $this->filename = md5($this->slug . rand()) . '.' . $extension;
         return $this;
+    }
+
+    /**
+     * Returns the extension of the media item.
+     */
+    public function getExtension() {
+        $parts = explode('.', $this->filename);
+        return end($parts);
     }
 
     /**

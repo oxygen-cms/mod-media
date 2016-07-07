@@ -58,11 +58,11 @@ class MediaController extends VersionableCrudController {
     }
 
     /**
-     * Show the upload form.
+     * View this image.
      *
      * @return \Illuminate\Http\Response
      */
-    public function getView($slug) {
+    public function getView($slug, $extension) {
         $media = $this->repository->findBySlug($slug);
 
         return new BinaryFileResponse(Config::get('oxygen.mod-media.directory.filesystem') . '/' . $media->getFilename(), 200, [], true);
