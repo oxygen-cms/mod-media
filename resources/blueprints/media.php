@@ -23,7 +23,7 @@ Blueprint::make('Media', function($blueprint) {
         'item' => [
             'getUse',
             'getRaw',
-            'getUpdate,More' => ['getView', 'getInfo', 'getEditImage', 'postMakeResponsive', 'deleteDelete', 'postRestore', 'deleteForce'],
+            'getUpdate,More' => ['getInfo', 'getEditImage', 'postMakeResponsive', 'deleteDelete', 'postRestore', 'deleteForce'],
             'Versions' => ['postNewVersion', 'postMakeHeadVersion']
         ],
         'versionList' => [
@@ -77,7 +77,8 @@ Blueprint::make('Media', function($blueprint) {
             'group'         => new Group('media'),
             'routeParametersCallback' => function(Action $action, array $options) {
                 return [
-                    $options['model']->getSlug()
+                    $options['model']->getSlug(),
+                    $options['model']->getExtension()
                 ];
             },
             'customRouteCallback' => function(Action $action, $route) {
@@ -86,7 +87,7 @@ Blueprint::make('Media', function($blueprint) {
         ],
         new ActionFactory()
     );
-    $blueprint->makeToolbarItem([
+    /*$blueprint->makeToolbarItem([
         'action'        => 'getView',
         'label'         => 'View',
         'icon'          => 'file-image-o',
@@ -95,7 +96,7 @@ Blueprint::make('Media', function($blueprint) {
                 $item->shouldRenderBasic($arguments) &&
                 $arguments['model']->isHead();
         }
-    ]);
+    ]);*/
 
     $blueprint->makeAction([
         'name'      => 'getRaw',
