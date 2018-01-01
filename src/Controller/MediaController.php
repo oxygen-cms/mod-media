@@ -48,7 +48,14 @@ class MediaController extends VersionableCrudController {
      * @return \Illuminate\Http\Response
      */
     public function getList($queryParameters = null) {
-        $items = $this->repository->paginate(25, $queryParameters == null ? new QueryParameters(['excludeTrashed', 'excludeVersions'], 'id', QueryParameters::DESCENDING) : $queryParameters);
+        if($queryParameters == null) {
+            $queryParameters = QueryParameters::make()
+                ->excludeTrashed()
+                ->excludeVersions()
+                ->orderBy('id', QueryParameters::DESCENDING);
+        }
+
+        $items = $this->repository->paginate(25, $queryParameters, null, app('request')->input('q', null));
 
         // render the view
         return view('oxygen/mod-media::list', [

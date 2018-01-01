@@ -11,6 +11,7 @@ use Oxygen\Data\Behaviour\Fillable;
 use Oxygen\Data\Behaviour\PrimaryKey;
 use Oxygen\Data\Behaviour\PrimaryKeyInterface;
 use Oxygen\Data\Behaviour\SoftDeletes;
+use Oxygen\Data\Behaviour\Searchable;
 use Oxygen\Data\Behaviour\Timestamps;
 use Oxygen\Data\Behaviour\Versions;
 use Oxygen\Data\Validation\Validatable;
@@ -21,7 +22,7 @@ use Oxygen\Data\Validation\Validatable;
  * @ORM\HasLifecycleCallbacks
  */
 
-class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterface {
+class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterface, Searchable {
 
     use PrimaryKey, Timestamps, SoftDeletes, Versions, CacheInvalidator;
     use Accessors, Fillable;
@@ -199,6 +200,15 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
 
     protected function getFillableFields() {
         return ['name', 'slug', 'author', 'alt', 'caption', 'description', 'default'];
+    }
+
+    /**
+     * Returns the fields that should be searched.
+     *
+     * @return array
+     */
+    public static function getSearchableFields() {
+        return ['name', 'slug', 'description'];
     }
 
 }
