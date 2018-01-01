@@ -2,22 +2,21 @@
 
 namespace OxygenModule\Media;
 
+use Log;
 use Illuminate\Filesystem\Filesystem;
 use OxygenModule\ImportExport\WorkerInterface;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use Illuminate\Config\Repository;
-use ZipArchive;
+use OxygenModule\ImportExport\Strategy\ExportStrategy;
+use OxygenModule\ImportExport\Strategy\ImportStrategy;
 
 class MediaWorker implements WorkerInterface {
-
-    protected $prefix = 'content/media/';
 
     protected $files;
 
     /**
      * Constructs the MediaWorker.
      *
-     * @param MediaRepositoryInterface          $media
      * @param \Illuminate\Filesystem\Filesystem $files
      * @param Repository                        $config
      */
@@ -29,65 +28,65 @@ class MediaWorker implements WorkerInterface {
     }
 
     /**
-     * Returns an array of files to add to the archive.
+     * Adds the media items to the backup.
      *
-     * @param string $backupKey
-     * @return mixed
+     * @param ExportStrategy $strategy
+     * @return void
      */
-    public function export($backupKey) {
+    public function export(ExportStrategy $strategy) {
         $media = $this->media->columns(['filename']);
-        $files = [];
+
         $baseDir = $this->config->get('oxygen.mod-media.directory.filesystem');
         foreach($media as $item) {
             $fullFile = $baseDir . '/' . $item['filename'];
+
             if($this->files->exists($fullFile)) {
-                $files[$fullFile] = $this->prefix . $item['filename'];
+                Log::warning($fullFile . ' was referenced by a media item but does not exist in the filesystem');
+                $strategy->addFile($fullFile, dirname($baseDir));
             }
         }
-        return $files;
     }
 
     /**
      * Cleans up any temporary files that were created after they have been added to the ZIP archive.
      *
-     * @param string $backupKey
+     * @param ExportStrategy $strategy
      * @return void
      */
-    public function postExport($backupKey) {
+    public function postExport(ExportStrategy $strategy) {
         // no temporary files created
     }
 
     /**
-     * Cleans up any temporary files that were created after they have been added to the ZIP archive.
+     * Imports the media items.
      *
-     * @param \ZipArchive $zip
+     * @param ImportStrategy $strategy
      */
-    public function import(ZipArchive $zip) {
-        $mediaFiles = [];
-        $mediaDir = null;
+    public function import(ImportStrategy $strategy) {
+        $files = $strategy->getFiles();
+        $mediaPath = $this->config->get('oxygen.mod-media.directory.filesystem');
 
-        $regex = '/^([a-zA-Z0-9\-]+)\/' . preg_quote($this->prefix, '/') . '/';
+        foreach($files as $file) {
+            $path = $file->getPathname();
+            $search = basename($mediaPath);
 
-        for($i = 0; $i < $zip->numFiles; $i++) {
-            $filename = $zip->getNameIndex($i);
-
-            $matches = [];
-            if(preg_match($regex, $filename, $matches)) {
-                $mediaFiles[] = $filename;
-
-                if($mediaDir == null) {
-                    $mediaDir = $matches[1];
+            if (
+                $file->isFile() &&
+                str_contains($path, $search) &&
+                in_array($file->getExtension(), ['jpeg','png','gif','mp3','mp4a','aif','wav','mpga','ogx','pdf'])
+            ) {
+                if(app()->runningInConsole()) {
+                    echo 'Importing media file from ' . $path . "\n";
                 }
 
+                $newPath = $mediaPath . '/' . basename($path);
+
+                if($this->files->exists($newPath)) {
+                    echo 'WARNING: Overwriting ' . $newPath . "\n";
+                }
+
+                $this->files->move($file->getPathname(), $newPath);
             }
         }
-
-        $path = $this->config->get('oxygen.mod-media.directory.filesystem');
-        $this->files->cleanDirectory($path);
-        $zip->extractTo($path, $mediaFiles);
-
-        // move `public/content/media/local-56-30-12/content/media` to `public/content/media`
-        $this->files->copyDirectory($path . '/' . $mediaDir . '/' . $this->prefix, $path);
-        $this->files->deleteDirectory($path . '/' . $mediaDir);
     }
 }
