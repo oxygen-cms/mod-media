@@ -2,11 +2,11 @@
 
 namespace OxygenModule\Media\Repository;
 
+use Illuminate\Cache\Repository;
 use OxygenModule\Media\Entity\Media;
 use Doctrine\Common\EventSubscriber;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Events;
-use Illuminate\Cache\CacheManager;
 use Illuminate\Config\Repository as Config;
 use Illuminate\Filesystem\Filesystem;
 
@@ -27,16 +27,20 @@ class MediaSubscriber implements EventSubscriber {
      */
 
     protected $config;
+    /**
+     * @var Repository
+     */
+    private $cache;
 
     /**
      * Constructs the MediaSubscriber.
      *
      * @param Filesystem    $filesystem
      * @param Config        $config
-     * @param CacheManager  $cache
+     * @param Repository  $cache
      */
 
-    public function __construct(Filesystem $filesystem, Config $config, CacheManager $cache) {
+    public function __construct(Filesystem $filesystem, Config $config, Repository $cache) {
         $this->files = $filesystem;
         $this->config = $config;
         $this->cache = $cache;
@@ -91,6 +95,8 @@ class MediaSubscriber implements EventSubscriber {
      *
      * @param LifecycleEventArgs $args
      * @return void
+     * @throws \Doctrine\ORM\NoResultException
+     * @throws \Doctrine\ORM\NonUniqueResultException
      */
 
     public function preRemove(LifecycleEventArgs $args) {

@@ -9,7 +9,7 @@
     use Oxygen\Core\Blueprint\Blueprint;
     use Oxygen\Core\Html\Header\Header;
 
-    $title = Lang::get(
+    $title = __(
         $isTrash ? 'oxygen/crud::ui.resource.listTrash' : 'oxygen/crud::ui.resource.list',
         ['resources' => $blueprint->getDisplayName(Blueprint::PLURAL)]
     );

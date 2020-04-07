@@ -25,8 +25,9 @@ class DoctrineMediaRepository extends Repository implements MediaRepositoryInter
      * Finds an Media item based upon the slug.
      *
      * @param string $slug
-     * @throws NoResultException
      * @return Media
+     * @throws \Doctrine\ORM\NonUniqueResultException
+     * @throws NoResultException
      */
     public function findBySlug($slug) {
         $q = $this->getQuery(

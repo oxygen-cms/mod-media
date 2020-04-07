@@ -2,7 +2,6 @@
 
 namespace OxygenModule\Media;
 
-use Doctrine\ORM\EntityManager;
 use Oxygen\Core\Blueprint\BlueprintManager;
 use OxygenModule\Media\Presenter\HtmlPresenter;
 use OxygenModule\Media\Presenter\PresenterInterface;

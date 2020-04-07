@@ -7,7 +7,7 @@
     use Oxygen\Core\Html\Form\Form;
     use Oxygen\Core\Html\Header\Header;
 
-    $title = Lang::get('oxygen/mod-media::ui.upload.title');
+    $title = __('oxygen/mod-media::ui.upload.title');
 
     $header = Header::fromBlueprint(
         $blueprint,

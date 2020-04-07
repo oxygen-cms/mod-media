@@ -9,7 +9,7 @@ interface PresenterInterface {
     /**
      * Whether the presenter should use absolute URLs to the resource
      *
-     * @param $use
+     * @param boolean $use
      * @return void
      */
     public function setUseAbsoluteURLs($use);
@@ -17,7 +17,7 @@ interface PresenterInterface {
     /**
      * Displays the Media.
      *
-     * @param $slug         $media
+     * @param string        $slug
      * @param string|null   $template
      * @param array         $attributes
      * @return mixed
@@ -37,9 +37,9 @@ interface PresenterInterface {
     /**
      * Previews the given media item.
      *
-     * @param $media
+     * @param Media $media
      * @return string
      */
-    public function preview($media);
+    public function preview(Media $media);
 
 }

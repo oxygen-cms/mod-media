@@ -3,8 +3,8 @@
 @section('content')
 
 <?php
-    $sectionTitle = Lang::get('oxygen/mod-media::ui.editImage.title');
-    $title = Lang::get('oxygen/mod-media::ui.editImage.namedTitle', [
+    $sectionTitle = __('oxygen/mod-media::ui.editImage.title');
+    $title = __('oxygen/mod-media::ui.editImage.namedTitle', [
         'name' => $item->getAttribute($crudFields->getTitleFieldName())
     ]);
 ?>

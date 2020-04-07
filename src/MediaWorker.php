@@ -2,17 +2,26 @@
 
 namespace OxygenModule\Media;
 
-use Log;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Filesystem\Filesystem;
 use OxygenModule\ImportExport\WorkerInterface;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use Illuminate\Config\Repository;
 use OxygenModule\ImportExport\Strategy\ExportStrategy;
 use OxygenModule\ImportExport\Strategy\ImportStrategy;
+use Illuminate\Support\Str;
 
 class MediaWorker implements WorkerInterface {
 
     protected $files;
+    /**
+     * @var Repository
+     */
+    private $config;
+    /**
+     * @var MediaRepositoryInterface
+     */
+    private $media;
 
     /**
      * Constructs the MediaWorker.
@@ -32,6 +41,7 @@ class MediaWorker implements WorkerInterface {
      *
      * @param ExportStrategy $strategy
      * @return void
+     * @throws \Exception
      */
     public function export(ExportStrategy $strategy) {
         $media = $this->media->columns(['filename']);
@@ -72,7 +82,7 @@ class MediaWorker implements WorkerInterface {
 
             if (
                 $file->isFile() &&
-                str_contains($path, $search) &&
+                Str::contains($path, $search) &&
                 in_array($file->getExtension(), ['jpeg','png','gif','mp3','mp4a','aif','wav','mpga','ogx','pdf'])
             ) {
                 if(app()->runningInConsole()) {

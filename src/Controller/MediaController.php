@@ -2,16 +2,14 @@
 
 namespace OxygenModule\Media\Controller;
 
-use Config;
 use Exception;
+use Illuminate\Http\Response;
 use Illuminate\Http\Request;
-use Input;
-use Lang;
-use Response;
 use Illuminate\Support\Str;
-use Validator;
 
+use Illuminate\View\View;
 use Intervention\Image\Image;
+use Oxygen\Core\Blueprint\BlueprintNotFoundException;
 use OxygenModule\Media\MediaFieldSet;
 use OxygenModule\Media\Entity\Media;
 use OxygenModule\Media\MacroProcessor;
@@ -33,8 +31,8 @@ class MediaController extends VersionableCrudController {
      *
      * @param MediaRepositoryInterface          $repository
      * @param BlueprintManager                  $manager
-     * @param \OxygenModule\Media\MediaFieldSet $fields
-     * @throws \Oxygen\Core\Blueprint\BlueprintNotFoundException
+     * @param MediaFieldSet $fields
+     * @throws BlueprintNotFoundException
      */
 
     public function __construct(MediaRepositoryInterface $repository, BlueprintManager $manager, MediaFieldSet $fields) {
@@ -44,8 +42,8 @@ class MediaController extends VersionableCrudController {
     /**
      * List all entities.
      *
-     * @param \Oxygen\Data\Repository\QueryParameters $queryParameters
-     * @return \Illuminate\Http\Response
+     * @param QueryParameters $queryParameters
+     * @return View
      */
     public function getList($queryParameters = null) {
         if($queryParameters == null) {
@@ -67,29 +65,29 @@ class MediaController extends VersionableCrudController {
     /**
      * View this image.
      *
-     * @return \Illuminate\Http\Response
+     * @return BinaryFileResponse
      */
     public function getView($slug, $extension) {
         $media = $this->repository->findBySlug($slug);
 
-        return new BinaryFileResponse(Config::get('oxygen.mod-media.directory.filesystem') . '/' . $media->getFilename(), 200, [], true);
+        return new BinaryFileResponse(config('oxygen.mod-media.directory.filesystem') . '/' . $media->getFilename(), 200, [], true);
     }
 
     /**
      * Returns the raw resource.
      *
-     * @param          $item
+     * @param mixed    $item
      * @param array    $input
      * @param callable $respond
-     * @throws \Exception
-     * @return \Illuminate\Http\Response
+     * @return BinaryFileResponse
+     * @throws Exception
      */
     public function getRaw($item, array $input = null, $respond = null) {
         $item = $this->getItem($item);
-        $filename = Config::get('oxygen.mod-media.directory.filesystem') . '/' . $item->getFilename();
+        $filename = config('oxygen.mod-media.directory.filesystem') . '/' . $item->getFilename();
 
         if($input === null) {
-            $input = Input::all();
+            $input = request()->all();
         }
 
         if($respond === null) {
@@ -111,7 +109,7 @@ class MediaController extends VersionableCrudController {
             $image = $macroProcessor->process(ImageFacade::make($filename));
 
             if(isset($input['save']) && $input['save'] === 'true') {
-                $image->save(Config::get('oxygen.mod-media.directory.filesystem') . '/' . $item->getFilename());
+                $image->save(config('oxygen.mod-media.directory.filesystem') . '/' . $item->getFilename());
 
                 $name = $input['name'];
                 $slug = $input['slug'];
@@ -130,7 +128,7 @@ class MediaController extends VersionableCrudController {
      * Shows the update form.
      *
      * @param mixed $item the item
-     * @return \Illuminate\Http\Response
+     * @return View
      */
     public function getUpdate($item) {
         $item = $this->getItem($item);
@@ -143,13 +141,13 @@ class MediaController extends VersionableCrudController {
      * Displays the image editor.
      *
      * @param mixed $item
-     * @return \Illuminate\Http\Response
+     * @return View
      */
     public function getEditImage($item) {
         $item = $this->getItem($item);
 
         if($item->getType() !== Media::TYPE_IMAGE) {
-            return Response::notification(new Notification(Lang::get('oxygen/mod-media::messages.onlyAbleToEditImages'), Notification::FAILED));
+            return notify(new Notification(__('oxygen/mod-media::messages.onlyAbleToEditImages'), Notification::FAILED));
         }
 
         return view('oxygen/mod-media::editImage')
@@ -159,7 +157,7 @@ class MediaController extends VersionableCrudController {
     /**
      * Show the upload form.
      *
-     * @return \Illuminate\Http\Response
+     * @return View
      */
     public function getUpload() {
         return view('oxygen/mod-media::upload')
@@ -169,19 +167,19 @@ class MediaController extends VersionableCrudController {
     /**
      * Process the uploaded file.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function postUpload(Request $input) {
         // if no file has been uploaded
         if(!$input->hasFile('file')) {
             // guess if post_max_size has been reached
             if (empty($_FILES) && empty($_POST) && isset($_SERVER['REQUEST_METHOD']) && strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
-                $message = Lang::get('oxygen/crud::messages.upload.tooLarge');
+                $message = __('oxygen/crud::messages.upload.tooLarge');
             } else {
-                $message = Lang::get('oxygen/crud::messages.upload.noFiles');
+                $message = __('oxygen/crud::messages.upload.noFiles');
             }
 
-            return Response::notification(
+            return notify(
                 new Notification($message, Notification::FAILED)
             );
         }
@@ -208,12 +206,12 @@ class MediaController extends VersionableCrudController {
         $this->repository->flush();
 
         if($success) {
-            return Response::notification(
+            return notify(
                 new Notification($text),
                 ['redirect' => $this->blueprint->getRouteName('getList')]
             );
         } else {
-            return Response::notification(
+            return notify(
                 new Notification($text, Notification::FAILED)
             );
         }
@@ -226,18 +224,18 @@ class MediaController extends VersionableCrudController {
      * @param string $name
      * @param string $slug
      * @param string $headVersion
-     * @return MessageBag messages
+     * @return MessageBag|array messages
      */
     protected function makeFromFile(UploadedFile $file, $name = null, $slug = null, $headVersion = null) {
         if(!$file->isValid()) {
             $messages = new MessageBag();
-            return $messages->add('exists', Lang::get('oxygen/crud::messages.upload.failed', [
+            return $messages->add('exists', __('oxygen/crud::messages.upload.failed', [
                 'name' => $file->getClientOriginalName(),
                 'error' => $file->getError()
             ]));
         }
 
-        $validator = Validator::make(
+        $validator = validator()->make(
             ['file' => $file],
             ['file' => 'max:10000|mimes:jpeg,png,gif,mp3,mp4a,aif,wav,mpga,ogx,pdf']
         );
@@ -284,10 +282,10 @@ class MediaController extends VersionableCrudController {
 
             $this->repository->persist($media, false);
 
-            $file->move(Config::get('oxygen.mod-media.directory.filesystem'), $media->getFilename());
+            $file->move(config('oxygen.mod-media.directory.filesystem'), $media->getFilename());
 
             $messages = new MessageBag();
-            return $messages->add('success', Lang::get('oxygen/crud::messages.upload.success', [
+            return $messages->add('success', __('oxygen/crud::messages.upload.success', [
                 'name' => $file->getClientOriginalName()
             ]));
         } catch(InvalidEntityException $e) {
@@ -301,7 +299,8 @@ class MediaController extends VersionableCrudController {
      * @param Media $image
      * @param string $size
      * @param string $name
-     * @return Media
+     * @return BinaryFileResponse
+     * @throws Exception
      */
     protected function resizeImage(Media $image, $size, $name) {
         return $this->getRaw($image, [
@@ -320,7 +319,8 @@ class MediaController extends VersionableCrudController {
      * Makes multiple 'responsive' versions of the image.
      *
      * @param mixed $item
-     * @return \Illuminate\Http\Response
+     * @return Response
+     * @throws Exception
      */
     public function postMakeResponsive($item) {
         $original = $this->getItem($item);
@@ -331,7 +331,7 @@ class MediaController extends VersionableCrudController {
 
         $this->repository->makeHeadVersion($original);
 
-        return Response::notification(new Notification(Lang::get('oxygen/mod-media::messages.madeResponsive')), ['refresh' => true]);
+        return notify(new Notification(__('oxygen/mod-media::messages.madeResponsive')), ['refresh' => true]);
     }
 
 }

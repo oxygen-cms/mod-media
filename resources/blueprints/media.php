@@ -4,17 +4,14 @@ use Oxygen\Core\Action\Group;
 use Oxygen\Core\Action\Action;
 use Oxygen\Core\Action\Factory\ActionFactory;
 use Oxygen\Core\Http\Method;
-use Oxygen\Core\Form\FieldMetadata;
 use OxygenModule\Media\Entity\Media;
 use Oxygen\Core\Html\Dialog\Dialog;
-use Oxygen\Core\Html\Toolbar\ActionToolbarItem;
 use Oxygen\Core\Html\Toolbar\Factory\VoidButtonToolbarItemFactory;
-use Oxygen\Core\Html\Toolbar\Factory\FormToolbarItemFactory;
 use Oxygen\Crud\BlueprintTrait\VersionableCrudTrait;
 use OxygenModule\Media\Controller\MediaController;
 use Oxygen\Crud\BlueprintTrait\SearchableCrudTrait;
 
-Blueprint::make('Media', function($blueprint) {
+Blueprint::make('Media', function(\Oxygen\Core\Blueprint\Blueprint $blueprint) {
     $blueprint->disablePluralForm();
     $blueprint->setPluralName('Media');
     $blueprint->setPluralDisplayName('Media');

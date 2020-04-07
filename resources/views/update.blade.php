@@ -3,11 +3,11 @@
 @section('content')
 
 <?php
-    $title = Lang::get('oxygen/crud::ui.namedResource.update', [
+    $title = __('oxygen/crud::ui.namedResource.update', [
         'name' => $item->getAttribute($crudFields->getTitleFieldName())
     ]);
 
-    $sectionTitle = Lang::get('oxygen/crud::ui.resource.update', [
+    $sectionTitle = __('oxygen/crud::ui.resource.update', [
         'resource' => $blueprint->getDisplayName()
     ]);
 ?>

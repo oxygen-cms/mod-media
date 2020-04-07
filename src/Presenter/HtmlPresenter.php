@@ -6,8 +6,8 @@ use Illuminate\Contracts\Routing\UrlGenerator;
 use Oxygen\Data\Exception\NoResultException;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use OxygenModule\Media\Entity\Media;
-use Illuminate\Cache\CacheManager;
 use Illuminate\Config\Repository;
+use Illuminate\Support\Arr;
 
 class HtmlPresenter implements PresenterInterface {
 
@@ -30,24 +30,40 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Default Template
      *
-     * @var string
+     * @var array
      */
-
     protected $defaultTemplate;
 
     protected $useAbsoluteURLs;
 
     protected $tagStyle;
+    /**
+     * @var \Illuminate\Cache\Repository
+     */
+    private $cache;
+
+    /**
+     * @var Repository
+     */
+    private $config;
+    /**
+     * @var MediaRepositoryInterface
+     */
+    private $entities;
+    /**
+     * @var UrlGenerator
+     */
+    private $url;
 
     /**
      * Constructs the HtmlPresenter.
      *
-     * @param CacheManager                               $cache
+     * @param \Illuminate\Cache\Repository                               $cache
      * @param Repository                                 $config
      * @param \Illuminate\Contracts\Routing\UrlGenerator $url
      * @param MediaRepositoryInterface                   $media
      */
-    public function __construct(CacheManager $cache, Repository $config, UrlGenerator $url, MediaRepositoryInterface $media) {
+    public function __construct(\Illuminate\Cache\Repository $cache, Repository $config, UrlGenerator $url, MediaRepositoryInterface $media) {
         $this->cache = $cache;
         $this->config = $config;
         $this->entities = $media;
@@ -98,7 +114,7 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Adds a template.
      *
-     * @param          $name
+     * @param string $name
      * @param callable $callback
      */
 
@@ -109,8 +125,8 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Retrieves a template.
      *
-     * @param $name
-     * @param $type
+     * @param string $name
+     * @param int $type
      * @return callable
      */
 
@@ -196,8 +212,8 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Sets a template as default.
      *
-     * @param $name
-     * @param $type
+     * @param string $name
+     * @param int $type
      */
     public function setDefaultTemplate($name, $type) {
         $this->defaultTemplate[$type] = $name;
@@ -206,7 +222,7 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Returns the mime type of the given audio resource.
      *
-     * @param $audio
+     * @param Media $audio
      * @return string
      */
     protected function getMimeTypeFromAudio(Media $audio) {
@@ -243,7 +259,7 @@ class HtmlPresenter implements PresenterInterface {
      * Determines if this resource should be accessed externally
      *
      * @param array $attributes
-     * @return string
+     * @return boolean
      */
     protected function isExternal($attributes) {
         return isset($attributes['external']) && $attributes['external'] === true;
@@ -262,7 +278,7 @@ class HtmlPresenter implements PresenterInterface {
         unset($customAttributes['external']);
 
         if($media->getType() === Media::TYPE_IMAGE) {
-            $versions = array_where($this->getMedia(), function($key, $value) use($media) {
+            $versions = Arr::where($this->getMedia(), function($key, $value) use($media) {
                 return preg_match('/' . preg_quote($media->getSlug(), '/') . '\/[0-9]+/', $key);
             });
 
@@ -292,7 +308,7 @@ class HtmlPresenter implements PresenterInterface {
                 $customAttributes
             );
         } else if($media->getType() === Media::TYPE_AUDIO) {
-            $versions = array_where($this->getMedia(), function($key, $value) use($media) {
+            $versions = Arr::where($this->getMedia(), function($key, $value) use($media) {
                 return preg_match('/' . preg_quote($media->getSlug()) . '\/[a-z]+/', $key);
             });
 
@@ -353,10 +369,10 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Previews the given media item.
      *
-     * @param $media
+     * @param Media $media
      * @return string
      */
-    public function preview($media) {
+    public function preview(Media $media) {
         switch($media->getType()) {
             case Media::TYPE_IMAGE:
                 return '<img src="' . $this->getFilename($media->getFilename(), false) . '">';
@@ -365,6 +381,7 @@ class HtmlPresenter implements PresenterInterface {
                 return '<div class="Icon-container"><span class="Icon Icon--gigantic Icon--light Icon-music"></span></div>'; //<audio src="' . $filename . '" preload="none" controls></audio>';
                 break;
             case Media::TYPE_DOCUMENT:
+            default:
                 return '<div class="Icon-container"><span class="Icon Icon--gigantic Icon--light Icon-file-text"></span></div>';
         }
     }
@@ -372,7 +389,7 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Whether the presenter should use absolute URLs to the resource
      *
-     * @param $use
+     * @param boolean $use
      * @return void
      */
     public function setUseAbsoluteURLs($use) {
@@ -382,7 +399,7 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Whether the presenter should use html4/html5 etc
      *
-     * @param $style
+     * @param string $style
      * @return void
      */
     public function setStyle($style) {

@@ -6,13 +6,16 @@ use Exception;
 use Intervention\Image\Image;
 
 class MacroProcessor {
+    /**
+     * @var array
+     */
+    private $macro;
 
     /**
      * Constructs the MacroProcessor
      *
-     * @param $macro
+     * @param array $macro
      */
-
     public function __construct($macro) {
         $this->macro = $macro;
     }
@@ -24,7 +27,6 @@ class MacroProcessor {
      * @throws Exception if the macro is invalid
      * @return Image
      */
-
     public function process(Image $image) {
         foreach($this->macro as $key => $args) {
             $method = 'process' . ucfirst($key);
@@ -45,6 +47,12 @@ class MacroProcessor {
         return $image->brightness($args);
     }
 
+    /**
+     * @param Image $image
+     * @param array $args
+     * @return Image
+     * @throws Exception
+     */
     public function processColorize(Image $image, $args) {
         if(count($args) !== 3) {
             throw new Exception('Filter "colorize" requires 3 parameters');
@@ -56,6 +64,12 @@ class MacroProcessor {
         return $image->contrast($args);
     }
 
+    /**
+     * @param Image $image
+     * @param array $args
+     * @return Image
+     * @throws Exception
+     */
     public function processCrop(Image $image, $args) {
         if(!isset($args['width']) || !isset($args['height'])) {
             throw new Exception('Filter "crop" requires the "width" and "height" parameters');
@@ -70,6 +84,12 @@ class MacroProcessor {
         return $image->flip($args);
     }
 
+    /**
+     * @param Image $image
+     * @param array $args
+     * @return Image
+     * @throws Exception
+     */
     public function processFit(Image $image, $args) {
         if(!isset($args['width']) && !isset($args['height'])) {
             throw new Exception('Filter "fit" requires the "width" and "height" parameters');
@@ -96,6 +116,12 @@ class MacroProcessor {
         return $image->pixelate($args);
     }
 
+    /**
+     * @param Image $image
+     * @param array $args
+     * @return Image
+     * @throws Exception
+     */
     public function processResize(Image $image, $args) {
         $constraint = function($constraint) use($args) {
             if(isset($args['keepAspectRatio']) && $args['keepAspectRatio'] == true) {
@@ -121,6 +147,12 @@ class MacroProcessor {
         }
     }
 
+    /**
+     * @param Image $image
+     * @param array $args
+     * @return Image
+     * @throws Exception
+     */
     public function processRotate(Image $image, $args) {
         if(!isset($args['angle'])) {
             throw new Exception('Filter "rotate" requires the "angle" parameter');
