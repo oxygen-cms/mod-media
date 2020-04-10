@@ -278,7 +278,7 @@ class HtmlPresenter implements PresenterInterface {
         unset($customAttributes['external']);
 
         if($media->getType() === Media::TYPE_IMAGE) {
-            $versions = Arr::where($this->getMedia(), function($key, $value) use($media) {
+            $versions = Arr::where($this->getMedia(), function($value, $key) use($media) {
                 return preg_match('/' . preg_quote($media->getSlug(), '/') . '\/[0-9]+/', $key);
             });
 
@@ -347,7 +347,11 @@ class HtmlPresenter implements PresenterInterface {
      * @param array       $customAttributes
      * @return mixed
      */
-    public function present($slug, $template = null, array $customAttributes = []) {
+    public function present($slug = null, $template = null, array $customAttributes = []) {
+        // we suspect that this is just a CSS media query, so we return the @media tag again
+        if($slug == null) {
+            return '@media';
+        }
         global $__env;
         try {
             $item = $this->entities->findBySlug($slug);
@@ -378,11 +382,11 @@ class HtmlPresenter implements PresenterInterface {
                 return '<img src="' . $this->getFilename($media->getFilename(), false) . '">';
                 break;
             case Media::TYPE_AUDIO:
-                return '<div class="Icon-container"><span class="Icon Icon--gigantic Icon--light Icon-music"></span></div>'; //<audio src="' . $filename . '" preload="none" controls></audio>';
+                return '<div class="Icon-container"><span class="fa Icon--gigantic Icon--light fa-music"></span></div>'; //<audio src="' . $filename . '" preload="none" controls></audio>';
                 break;
             case Media::TYPE_DOCUMENT:
             default:
-                return '<div class="Icon-container"><span class="Icon Icon--gigantic Icon--light Icon-file-text"></span></div>';
+                return '<div class="Icon-container"><span class="fa Icon--gigantic Icon--light fa-file-text"></span></div>';
         }
     }
 

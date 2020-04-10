@@ -1,4 +1,5 @@
-<div class="Row--visual">
+<div>
+    <div class="Row">
     <div class="FileUpload">
         <div class="FileUpload-dropzone">
             <div class="FileUpload-drop FileUpload--js">Drop files here</div>
@@ -7,6 +8,7 @@
                 <input name="file[]" type="file" multiple>
             </div>
         </div>
+    </div>
     </div>
 
     <?php
@@ -18,14 +20,14 @@
 
     $f = [];
 
-    $f[] = new EditableField($fields->getField('name'), app('request'));
+    $f[] = new EditableField($fields->getField('name'));
 
-    $f[] = new EditableField($fields->getField('slug'), app('request'));
+    $f[] = new EditableField($fields->getField('slug'));
 
     $headVersion = new FieldMetadata('headVersion', 'select', true);
     $headVersion->options = $media;
     $headVersion->options['_new'] = '(Create New)';
-    $headVersion = new EditableField($headVersion, app('request'), '_new');
+    $headVersion = new EditableField($headVersion, '_new');
     $f[] = $headVersion;
 
     foreach($f as $field) {

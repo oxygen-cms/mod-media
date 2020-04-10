@@ -24,13 +24,7 @@
 
 <div class="Block">
     {!! $header->render() !!}
-</div>
 
-<!-- =====================
-             INFO
-     ===================== -->
-
-<div class="Block Block--padded">
     <?php
         $form = new Form($blueprint->getAction('postUpload'));
         $form->setUseMultipartFormData(true);

@@ -45,7 +45,7 @@
     </div>
 @else
 
-    <div class="Row--layout Row--equalCells">
+    <div class="Row--layout Row--equalCells Row--wrap">
         <?php
         foreach($items as $item):
             $itemHeader = Header::fromBlueprint($blueprint, $crudFields, ['model' => $item, 'span' => 'oneThird'], Header::TYPE_BLOCK, 'item');

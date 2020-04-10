@@ -9,14 +9,10 @@
     ]);
 ?>
 
+<div class="Block">
 
-@include('oxygen/crud::versionable.itemHeader', ['blueprint' => $blueprint, 'fields' => $crudFields, 'item' => $item, 'title' => $sectionTitle])
+    @include('oxygen/crud::versionable.itemHeader', ['blueprint' => $blueprint, 'fields' => $crudFields, 'item' => $item, 'title' => $sectionTitle])
 
-<!-- =====================
-             INFO
-     ===================== -->
-
-<div class="Block Block--padded">
     <?php
         use Oxygen\Core\Html\Editor\Editor;
     ?>
@@ -43,12 +39,13 @@
                         Advanced
                     </button>
                 </div>
-                <button type="button" class="Button Button-color--white ImageEditor-toggleFullscreen align-right" data-enabled="false">
+                <div class="Row--spacer"></div>
+                <button type="button" class="Button Button-color--white ImageEditor-toggleFullscreen" data-enabled="false">
                     <div class="Toggle--ifEnabled">
-                        <span class="Icon Icon-times"></span>
+                        <span class="fa fa-times"></span>
                     </div>
                     <div class="Toggle--ifDisabled">
-                        <span class="Icon Icon-expand"></span>
+                        <span class="fas fa-expand-alt"></span>
                     </div>
                 </button>
             </div>
@@ -62,7 +59,7 @@
                     <button
                        type="button" class="Accordion-section"
                        data-switch-to-tab="basic" data-default-tab>
-                         <span class="Icon Icon-chevron-right Accordion-section-icon"></span>
+                         <span class="fa fa-chevron-right Accordion-section-icon"></span>
                          <span class="Accordion-section-message">Basic</span>
                     </button>
                     <div data-tab="basic">
@@ -75,7 +72,7 @@
                     <button
                        type="button" class="Accordion-section"
                        data-switch-to-tab="crop">
-                         <span class="Icon Icon-chevron-right Accordion-section-icon"></span>
+                         <span class="fa fa-chevron-right Accordion-section-icon"></span>
                          <span class="Accordion-section-message">Crop</span>
                     </button>
                     <div data-tab="crop">
@@ -91,7 +88,7 @@
                     <button
                        type="button" class="Accordion-section"
                        data-switch-to-tab="size">
-                         <span class="Icon Icon-chevron-right Accordion-section-icon"></span>
+                         <span class="fa fa-chevron-right Accordion-section-icon"></span>
                          <span class="Accordion-section-message">Size</span>
                     </button>
                     <div data-tab="size">
@@ -125,7 +122,7 @@
                     <button
                        type="button" class="Accordion-section"
                        data-switch-to-tab="orientation">
-                         <span class="Icon Icon-chevron-right Accordion-section-icon"></span>
+                         <span class="fa fa-chevron-right Accordion-section-icon"></span>
                          <span class="Accordion-section-message">Orientation</span>
                     </button>
                     <div data-tab="orientation">
@@ -145,7 +142,7 @@
                     <button
                        type="button" class="Accordion-section"
                        data-switch-to-tab="colours">
-                         <span class="Icon Icon-chevron-right Accordion-section-icon"></span>
+                         <span class="fa fa-chevron-right Accordion-section-icon"></span>
                          <span class="Accordion-section-message">Colours</span>
                     </button>
                     <div data-tab="colours">
@@ -168,7 +165,7 @@
                     <button
                        type="button" class="Accordion-section"
                        data-switch-to-tab="sharpness">
-                         <span class="Icon Icon-chevron-right Accordion-section-icon"></span>
+                         <span class="fa fa-chevron-right Accordion-section-icon"></span>
                          <span class="Accordion-section-message">Sharpness</span>
                     </button>
                     <div data-tab="sharpness">
@@ -196,7 +193,7 @@
                 </form>
             </div>
 
-            <div class="Row--visual">
+            <div class="Row--visual ImageEditor-submit">
                 <input type="text" name="name" class="Form-input--fullWidth" placeholder="Name" value="{{{ $item->getNewName() }}}"><br><br>
                 <input type="text" name="slug" class="Form-input--fullWidth" placeholder="Name" value="{{{ $item->getNewSlug() }}}"><br><br>
                 <div class="Form-footer">

@@ -146,12 +146,11 @@ Blueprint::make('Media', function(\Oxygen\Core\Blueprint\Blueprint $blueprint) {
     $blueprint->makeToolbarItem([
         'action'        => 'getUse',
         'label'         => 'Use',
-        'icon'          => 'magic',
-        'dialog'        => new Dialog(Lang::get('oxygen/mod-media::dialogs.use'), Dialog::TYPE_ALERT)
+        'icon'          => 'magic'
     ], new VoidButtonToolbarItemFactory())->addDynamicCallback(function($toolbarItem, $arguments) {
         $slug = $arguments['model']->getSlug();
         $link = \Config::get('app.url') . "/media/$slug." . $arguments['model']->getExtension();
-        $msg = Lang::get(
+        $msg = __(
             'oxygen/mod-media::dialogs.use',
             [
                 'internal-code' => "@media('$slug')",

@@ -2,6 +2,7 @@
 
 namespace OxygenModule\Media;
 
+use Illuminate\Cache\Repository;
 use Oxygen\Core\Blueprint\BlueprintManager;
 use OxygenModule\Media\Presenter\HtmlPresenter;
 use OxygenModule\Media\Presenter\PresenterInterface;
@@ -11,13 +12,6 @@ use OxygenModule\Media\Repository\MediaSubscriber;
 use Oxygen\Data\BaseServiceProvider;
 
 class MediaServiceProvider extends BaseServiceProvider {
-
-    /**
-     * Indicates if loading of the provider is deferred.
-     *
-     * @var bool
-     */
-    protected $defer = false;
 
     /**
      * Boots the package.
@@ -39,7 +33,7 @@ class MediaServiceProvider extends BaseServiceProvider {
 
         // Extends Blade compiler
         $this->app['blade.compiler']->directive('media', function($expression) {
-            return '<?php echo app(\'' . HtmlPresenter::class . '\')->present' . $expression . '; ?>';
+            return '<?php echo app(\'' . HtmlPresenter::class . '\')->present(' . $expression . '); ?>';
         });
     }
 
@@ -56,12 +50,12 @@ class MediaServiceProvider extends BaseServiceProvider {
 
         $this->extendEntityManager(function($entities) {
             $entities->getEventManager()
-                     ->addEventSubscriber(new MediaSubscriber($this->app['files'], $this->app['config'], $this->app['cache']));
+                     ->addEventSubscriber(new MediaSubscriber($this->app['files'], $this->app['config'], $this->app[Repository::class]));
         });
 
         $this->app->bind(PresenterInterface::class, HtmlPresenter::class);
         $this->app->singleton(HtmlPresenter::class, function($app) {
-            return new HtmlPresenter($app['cache'], $app['config'], $app['url'], $app[MediaRepositoryInterface::class]);
+            return new HtmlPresenter($app[Repository::class], $app['config'], $app['url'], $app[MediaRepositoryInterface::class]);
         });
 
         // extend backup functionality
@@ -74,19 +68,6 @@ class MediaServiceProvider extends BaseServiceProvider {
             }
             $this->app->resolving('OxygenModule\ImportExport\ImportExportManager', $mediaWorker);
         }
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
-
-    public function provides() {
-        return [
-            MediaRepositoryInterface::class,
-            'blade.compiler'
-        ];
     }
 
 }

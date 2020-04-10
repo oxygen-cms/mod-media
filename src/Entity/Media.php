@@ -183,10 +183,12 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
                 'slugExtended'
             ],
             'author' => [
+                'nullable',
                 'name',
                 'max:255'
             ],
             'default' => [
+                'nullable',
                 'integer'
             ]
         ];
