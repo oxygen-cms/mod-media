@@ -64,6 +64,8 @@
 
 @endif
 
+<div class="Block">
 {!! $items->render() !!}
+</div>
 
 @stop

@@ -235,7 +235,7 @@ class MediaController extends VersionableCrudController {
             ]));
         }
 
-        $validator = validator()->make(
+        $validator = validator(
             ['file' => $file],
             ['file' => 'max:10000|mimes:jpeg,png,gif,mp3,mp4a,aif,wav,mpga,ogx,pdf']
         );
