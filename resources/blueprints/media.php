@@ -14,7 +14,7 @@ use Oxygen\Crud\BlueprintTrait\SearchableCrudTrait;
 Blueprint::make('Media', function(\Oxygen\Core\Blueprint\Blueprint $blueprint) {
     $blueprint->disablePluralForm();
     $blueprint->setPluralName('Media');
-    $blueprint->setPluralDisplayName('Media');
+    $blueprint->setPluralDisplayName('Photos and Files');
     $blueprint->setController(MediaController::class);
     $blueprint->setIcon('picture-o');
 
