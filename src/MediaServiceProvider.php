@@ -4,6 +4,7 @@ namespace OxygenModule\Media;
 
 use Illuminate\Cache\Repository;
 use Oxygen\Core\Blueprint\BlueprintManager;
+use Oxygen\Core\Templating\TwigTemplateCompiler;
 use OxygenModule\Media\Presenter\HtmlPresenter;
 use OxygenModule\Media\Presenter\PresenterInterface;
 use OxygenModule\Media\Repository\DoctrineMediaRepository;
@@ -31,9 +32,20 @@ class MediaServiceProvider extends BaseServiceProvider {
 
         $this->app[BlueprintManager::class]->loadDirectory(__DIR__ . '/../resources/blueprints');
 
-        // Extends Blade compiler
-        $this->app['blade.compiler']->directive('media', function($expression) {
-            return '<?php echo app(\'' . HtmlPresenter::class . '\')->present(' . $expression . '); ?>';
+        // Extends Twig compiler
+        $this->app->resolving(TwigTemplateCompiler::class, function(TwigTemplateCompiler $compiler) {
+            $twig = $compiler->getTwig();
+
+            $twig->addFunction(new \Twig\TwigFunction('media', function($file, array $options = []) {
+                $template = null;
+                if(isset($options['template'])) {
+                    $template = $options['template'];
+                    unset($options['template']);
+                }
+                return $this->app[HtmlPresenter::class]->present($file, $template, $options);// . '\')->present(' . $expression . ');;
+            }, ['is_variadic' => true]));
+
+            $compiler->addAllowedFunction('media');
         });
     }
 

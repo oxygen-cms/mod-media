@@ -347,12 +347,9 @@ class HtmlPresenter implements PresenterInterface {
      * @param array       $customAttributes
      * @return mixed
      */
-    public function present($slug = null, $template = null, array $customAttributes = []) {
-        // we suspect that this is just a CSS media query, so we return the @media tag again
-        if($slug == null) {
-            return '@media';
-        }
+    public function present($slug, $template = null, array $customAttributes = []) {
         global $__env;
+        
         try {
             $item = $this->entities->findBySlug($slug);
             if(isset($__env) && method_exists($__env, 'viewDependsOnEntity')) {
@@ -366,7 +363,7 @@ class HtmlPresenter implements PresenterInterface {
             if(isset($__env) && method_exists($__env, 'viewDependsOnAllEntities')) {
                 $__env->viewDependsOnAllEntities(Media::class);
             }
-            return 'Media `' . e($slug) . '`` Not Found';
+            return 'Media `' . e($slug) . '` Not Found';
         }
     }
 
