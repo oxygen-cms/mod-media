@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Intervention\Image\Image;
 use Oxygen\Core\Blueprint\BlueprintNotFoundException;
+use Oxygen\Data\Exception\NoResultException;
 use OxygenModule\Media\MediaFieldSet;
 use OxygenModule\Media\Entity\Media;
 use OxygenModule\Media\MacroProcessor;
@@ -21,6 +22,7 @@ use Oxygen\Core\Http\Notification;
 use Oxygen\Crud\Controller\VersionableCrudController;
 use Oxygen\Data\Exception\InvalidEntityException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Intervention\Image\Facades\Image as ImageFacade;
 
@@ -68,11 +70,12 @@ class MediaController extends VersionableCrudController {
      * @return BinaryFileResponse
      */
     public function getView($slug, $extension) {
-        $media = $this->repository->findBySlug($slug);
-
         try {
+            $media = $this->repository->findBySlug($slug);
             return new BinaryFileResponse(config('oxygen.mod-media.directory.filesystem') . '/' . basename($media->getFilename()), 200, [], true);
-        } catch(\Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException $e) {
+        } catch(FileNotFoundException $e) {
+            abort(404);
+        } catch(NoResultException $e) {
             abort(404);
         }
     }
@@ -126,7 +129,7 @@ class MediaController extends VersionableCrudController {
         } else {
             try {
                 return new BinaryFileResponse($filename);
-            } catch(\Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException $e) {
+            } catch(FileNotFoundException $e) {
                 abort(404);
             }
         }
