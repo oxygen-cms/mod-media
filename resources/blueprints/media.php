@@ -153,7 +153,7 @@ Blueprint::make('Media', function(\Oxygen\Core\Blueprint\Blueprint $blueprint) {
         $msg = __(
             'oxygen/mod-media::dialogs.use',
             [
-                'internal-code' => "@media('$slug')",
+                'internal-code' => "{{ media ('$slug') }}",
                 'link' => $link
             ]
         );

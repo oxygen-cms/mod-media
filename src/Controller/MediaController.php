@@ -70,7 +70,11 @@ class MediaController extends VersionableCrudController {
     public function getView($slug, $extension) {
         $media = $this->repository->findBySlug($slug);
 
-        return new BinaryFileResponse(config('oxygen.mod-media.directory.filesystem') . '/' . $media->getFilename(), 200, [], true);
+        try {
+            return new BinaryFileResponse(config('oxygen.mod-media.directory.filesystem') . '/' . basename($media->getFilename()), 200, [], true);
+        } catch(\Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException $e) {
+            abort(404);
+        }
     }
 
     /**
@@ -84,7 +88,7 @@ class MediaController extends VersionableCrudController {
      */
     public function getRaw($item, array $input = null, $respond = null) {
         $item = $this->getItem($item);
-        $filename = config('oxygen.mod-media.directory.filesystem') . '/' . $item->getFilename();
+        $filename = config('oxygen.mod-media.directory.filesystem') . '/' . basename($item->getFilename());
 
         if($input === null) {
             $input = request()->all();
@@ -120,7 +124,11 @@ class MediaController extends VersionableCrudController {
 
             return $respond($image, $item, isset($oldVersion) ? $oldVersion : null);
         } else {
-            return new BinaryFileResponse($filename);
+            try {
+                return new BinaryFileResponse($filename);
+            } catch(\Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException $e) {
+                abort(404);
+            }
         }
     }
 
