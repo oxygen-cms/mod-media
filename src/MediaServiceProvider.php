@@ -71,7 +71,7 @@ class MediaServiceProvider extends BaseServiceProvider {
         });
 
         // extend backup functionality
-        if(class_exists('OxygenModule\ImportExport\ImportExportManager')) {
+        if(class_exists('OxygenModule\ImportExport\ImportExportManager') && config('oxygen.mod-media.backup')) {
             $mediaWorker = function($importExportManager) {
                 $importExportManager->addWorker(new MediaWorker($this->app[MediaRepositoryInterface::class], $this->app['files'], $this->app['config']));
             };
