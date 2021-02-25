@@ -107,7 +107,7 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
      */
 
     public function getNewName() {
-        $name = $this->getName();
+        $name = $this->name;
         $result = preg_match_all("/.*?(\\d+)$/", $name, $matches);
         if($result > 0) {
             $name = preg_replace_callback("/(.*?)(\\d+)$/", function($matches) {
@@ -124,7 +124,7 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
      */
 
     public function getNewSlug() {
-        $slug = $this->getSlug();
+        $slug = $this->slug;
         $result = preg_match_all("/.*?(\\d+)$/", $slug, $matches);
         if($result > 0) {
             $slug = preg_replace_callback("/(.*?)(\\d+)$/", function($matches) {

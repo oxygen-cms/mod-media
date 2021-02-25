@@ -5,6 +5,7 @@ namespace OxygenModule\Media;
 use Illuminate\Cache\Repository;
 use Oxygen\Core\Blueprint\BlueprintManager;
 use Oxygen\Core\Templating\TwigTemplateCompiler;
+use OxygenModule\ImportExport\ImportExportManager;
 use OxygenModule\Media\Presenter\HtmlPresenter;
 use OxygenModule\Media\Presenter\PresenterInterface;
 use OxygenModule\Media\Repository\DoctrineMediaRepository;
@@ -71,14 +72,14 @@ class MediaServiceProvider extends BaseServiceProvider {
         });
 
         // extend backup functionality
-        if(class_exists('OxygenModule\ImportExport\ImportExportManager') && config('oxygen.mod-media.backup')) {
+        if(config('oxygen.mod-media.backup')) {
             $mediaWorker = function($importExportManager) {
                 $importExportManager->addWorker(new MediaWorker($this->app[MediaRepositoryInterface::class], $this->app['files'], $this->app['config']));
             };
-            if($this->app->resolved('OxygenModule\ImportExport\ImportExportManager')) {
-                $mediaWorker($this->app['OxygenModule\ImportExport\ImportExportManager']);
+            if($this->app->resolved(ImportExportManager::class)) {
+                $mediaWorker($this->app[ImportExportManager::class]);
             }
-            $this->app->resolving('OxygenModule\ImportExport\ImportExportManager', $mediaWorker);
+            $this->app->resolving(ImportExportManager::class, $mediaWorker);
         }
     }
 

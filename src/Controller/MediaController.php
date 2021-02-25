@@ -75,8 +75,10 @@ class MediaController extends VersionableCrudController {
             return new BinaryFileResponse(config('oxygen.mod-media.directory.filesystem') . '/' . basename($media->getFilename()), 200, [], true);
         } catch(FileNotFoundException $e) {
             abort(404);
+            return null;
         } catch(NoResultException $e) {
             abort(404);
+            return null;
         }
     }
 
@@ -235,7 +237,7 @@ class MediaController extends VersionableCrudController {
      * @param string $name
      * @param string $slug
      * @param string $headVersion
-     * @return MessageBag|array messages
+     * @return \Illuminate\Contracts\Support\MessageBag messages
      */
     protected function makeFromFile(UploadedFile $file, $name = null, $slug = null, $headVersion = null) {
         if(!$file->isValid()) {
@@ -252,7 +254,7 @@ class MediaController extends VersionableCrudController {
         );
 
         if($validator->fails()) {
-            return $validator->messages();
+            return $validator->getMessageBag();
         }
 
         if($name === null) {
