@@ -3,7 +3,10 @@
 
 namespace OxygenModule\Media;
 
+use Oxygen\Core\Form\FieldMetadata;
 use Oxygen\Core\Form\FieldSet;
+use Oxygen\Core\Form\Type\CustomType;
+use OxygenModule\Media\Entity\Media;
 
 class MediaFieldSet extends FieldSet {
 
@@ -49,6 +52,16 @@ class MediaFieldSet extends FieldSet {
             [
                 'name'      => 'default',
                 'editable'  => true
+            ],
+            [
+                'name'      => 'type',
+                'type'      => 'select',
+                'options'   => [
+                    Media::TYPE_IMAGE => 'Image',
+                    Media::TYPE_DOCUMENT => 'Document',
+                    Media::TYPE_AUDIO => 'Audio'
+                ],
+                'editable' => true
             ],
             [
                 'name'      => 'createdAt',

@@ -201,7 +201,7 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
      */
 
     protected function getFillableFields() {
-        return ['name', 'slug', 'author', 'alt', 'caption', 'description', 'default'];
+        return ['name', 'slug', 'author', 'alt', 'caption', 'description', 'default', 'type'];
     }
 
     /**
