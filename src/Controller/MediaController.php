@@ -266,8 +266,8 @@ class MediaController extends VersionableCrudController {
         $extension = str_replace('jpeg', 'jpg', $file->guessExtension());
         $type = Media::TYPE_DOCUMENT;
 
-        switch($file->guessExtension()) {
-            case 'jpeg':
+        switch($extension) {
+            case 'jpg':
             case 'png':
             case 'gif':
                 $type = Media::TYPE_IMAGE;
