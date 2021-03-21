@@ -55,7 +55,9 @@ class MediaController extends VersionableCrudController {
                 ->orderBy('id', QueryParameters::DESCENDING);
         }
 
-        $items = $this->repository->paginate(25, $queryParameters, null, app('request')->input('q', null));
+        $this->maybeAddSearchClause($queryParameters);
+
+        $items = $this->repository->paginate(25, $queryParameters);
 
         // render the view
         return view('oxygen/mod-media::list', [
@@ -261,7 +263,7 @@ class MediaController extends VersionableCrudController {
             $name = Str::title(str_replace(['-', '_'], ' ', explode('.', $file->getClientOriginalName())[0]));
         }
         if($slug === null) {
-            $slug = Str::slug($name);
+            $slug = strtolower(Str::slug($name));
         }
         $extension = str_replace('jpeg', 'jpg', $file->guessExtension());
         $type = Media::TYPE_DOCUMENT;
