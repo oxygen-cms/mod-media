@@ -16,9 +16,9 @@
     "require": {
         "php": ">=7.2.0",
         "oxygen/core": "~0.10.0",
-        "oxygen/crud": "~0.7.1",
+        "oxygen/crud": "~0.7.2",
         "oxygen/data": "~0.10.0",
-        "oxygen/mod-import-export": "~0.3.5",
+        "oxygen/mod-import-export": "~0.3.6",
         "intervention/image":  "~2.0",
         "illuminate/support": "~6.0"
     },
