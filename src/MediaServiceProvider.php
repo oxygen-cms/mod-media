@@ -6,12 +6,17 @@ use Illuminate\Cache\Repository;
 use Oxygen\Core\Blueprint\BlueprintManager;
 use Oxygen\Core\Templating\TwigTemplateCompiler;
 use OxygenModule\ImportExport\ImportExportManager;
+use OxygenModule\Media\Console\CollectGarbageCommand;
+use OxygenModule\Media\Console\GenerateImageVariantsCommand;
 use OxygenModule\Media\Presenter\HtmlPresenter;
 use OxygenModule\Media\Presenter\PresenterInterface;
+use OxygenModule\Media\Repository\DoctrineMediaDirectoryRepository;
 use OxygenModule\Media\Repository\DoctrineMediaRepository;
+use OxygenModule\Media\Repository\MediaDirectoryRepositoryInterface;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use OxygenModule\Media\Repository\MediaSubscriber;
 use Oxygen\Data\BaseServiceProvider;
+use Twig\TwigFunction;
 
 class MediaServiceProvider extends BaseServiceProvider {
 
@@ -24,6 +29,9 @@ class MediaServiceProvider extends BaseServiceProvider {
         $this->mergeConfigFrom(__DIR__ . '/../config/config.php', 'oxygen.mod-media');
         $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'oxygen/mod-media');
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'oxygen/mod-media');
+        $this->loadRoutesFrom(__DIR__ . '/../resources/routes.php');
+        $this->commands(GenerateImageVariantsCommand::class);
+        $this->commands(CollectGarbageCommand::class);
 
         $this->publishes([
             __DIR__ . '/../resources/lang' => base_path('resources/lang/vendor/oxygen/mod-media'),
@@ -31,13 +39,11 @@ class MediaServiceProvider extends BaseServiceProvider {
             __DIR__ . '/../config/config.php' => config_path('oxygen/mod-media.php')
         ]);
 
-        $this->app[BlueprintManager::class]->loadDirectory(__DIR__ . '/../resources/blueprints');
-
         // Extends Twig compiler
         $this->app->resolving(TwigTemplateCompiler::class, function(TwigTemplateCompiler $compiler) {
             $twig = $compiler->getTwig();
 
-            $twig->addFunction(new \Twig\TwigFunction('media', function($file, array $options = []) {
+            $twig->addFunction(new TwigFunction('media', function($file, array $options = []) {
                 $template = null;
                 if(isset($options['template'])) {
                     $template = $options['template'];
@@ -48,6 +54,8 @@ class MediaServiceProvider extends BaseServiceProvider {
 
             $compiler->addAllowedFunction('media');
         });
+
+        $this->loadMigrationsFrom(__DIR__ . '/../migrations');
     }
 
     /**
@@ -60,15 +68,11 @@ class MediaServiceProvider extends BaseServiceProvider {
 
         // Repositories
         $this->app->bind(MediaRepositoryInterface::class, DoctrineMediaRepository::class);
-
-        $this->extendEntityManager(function($entities) {
-            $entities->getEventManager()
-                     ->addEventSubscriber(new MediaSubscriber($this->app['files'], $this->app['config'], $this->app[Repository::class]));
-        });
+        $this->app->bind(MediaDirectoryRepositoryInterface::class, DoctrineMediaDirectoryRepository::class);
 
         $this->app->bind(PresenterInterface::class, HtmlPresenter::class);
         $this->app->singleton(HtmlPresenter::class, function($app) {
-            return new HtmlPresenter($app[Repository::class], $app['config'], $app['url'], $app[MediaRepositoryInterface::class]);
+            return new HtmlPresenter($app['config'], $app['url'], $app[MediaRepositoryInterface::class]);
         });
 
         // extend backup functionality
@@ -81,6 +85,16 @@ class MediaServiceProvider extends BaseServiceProvider {
             }
             $this->app->resolving(ImportExportManager::class, $mediaWorker);
         }
+    }
+
+    /**
+     * @return string[]
+     */
+    public function provides(): array {
+        return [
+            MediaRepositoryInterface::class,
+            GenerateImageVariantsCommand::class
+        ];
     }
 
 }

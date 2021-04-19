@@ -32,15 +32,15 @@ class HtmlPresenter implements PresenterInterface {
      *
      * @var array
      */
-    protected $defaultTemplate;
+    protected $defaultTemplate = [
+        Media::TYPE_IMAGE => 'default.image',
+        Media::TYPE_AUDIO => 'default.audio',
+        Media::TYPE_DOCUMENT => 'default.link'
+    ];
 
     protected $useAbsoluteURLs;
 
     protected $tagStyle;
-    /**
-     * @var \Illuminate\Cache\Repository
-     */
-    private $cache;
 
     /**
      * @var Repository
@@ -58,13 +58,11 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Constructs the HtmlPresenter.
      *
-     * @param \Illuminate\Cache\Repository                               $cache
      * @param Repository                                 $config
      * @param \Illuminate\Contracts\Routing\UrlGenerator $url
      * @param MediaRepositoryInterface                   $media
      */
-    public function __construct(\Illuminate\Cache\Repository $cache, Repository $config, UrlGenerator $url, MediaRepositoryInterface $media) {
-        $this->cache = $cache;
+    public function __construct(Repository $config, UrlGenerator $url, MediaRepositoryInterface $media) {
         $this->config = $config;
         $this->entities = $media;
         $this->url = $url;
@@ -84,31 +82,11 @@ class HtmlPresenter implements PresenterInterface {
                 echo $presenter->renderAudio($sources['audioSources'], [['controls' => 'controls'], $customAttributes], 'Audio Not Supported');
             },
             'default.link' => function(HtmlPresenter $presenter, Media $media, array $sources, array $customAttributes) {
-                $content = isset($customAttributes['content']) ? $customAttributes['content'] : ($media->getCaption() ? $media->getCaption() : $media->getName());
+                $content = $customAttributes['content'] ?? ($media->getCaption() ? $media->getCaption() : $media->getName());
                 unset($customAttributes['content']);
                 echo $presenter->renderLink($content, [['target' => '_blank', 'href' => $sources['main']], $customAttributes]);
             }
         ];
-        $this->defaultTemplate = [
-            Media::TYPE_IMAGE => 'default.image',
-            Media::TYPE_AUDIO => 'default.audio',
-            Media::TYPE_DOCUMENT => 'default.link'
-        ];
-    }
-
-    /**
-     * Returns all the media items
-     *
-     * @return array
-     */
-    public function getMedia() {
-        if($this->media === null) {
-            $this->media = $this->cache->remember('media.list', 600, function() {
-                return $this->entities->listBySlug();
-            });
-        }
-
-        return $this->media;
     }
 
     /**
@@ -117,20 +95,18 @@ class HtmlPresenter implements PresenterInterface {
      * @param string $name
      * @param callable $callback
      */
-
-    public function addTemplate($name, callable $callback) {
+    public function addTemplate(string $name, callable $callback) {
         $this->templates[$name] = $callback;
     }
 
     /**
      * Retrieves a template.
      *
-     * @param string $name
+     * @param string|null $name
      * @param int $type
      * @return callable
      */
-
-    public function getTemplate($name, $type = Media::TYPE_IMAGE) {
+    public function getTemplate(?string $name, $type = Media::TYPE_IMAGE) {
         if($name === null) {
             return $this->templates[$this->defaultTemplate[$type]];
         } else {
@@ -144,8 +120,7 @@ class HtmlPresenter implements PresenterInterface {
      * @param array $layeredAttributes
      * @return string
      */
-
-    public function renderImage(array $layeredAttributes) {
+    public function renderImage(array $layeredAttributes): string {
         $attr = [];
         foreach($layeredAttributes as $attributes) {
             $attr = array_merge($attr, $attributes);
@@ -161,8 +136,7 @@ class HtmlPresenter implements PresenterInterface {
      * @param string $fallbackText
      * @return string
      */
-
-    public function renderAudio(array $sources, array $layeredAttributes, $fallbackText) {
+    public function renderAudio(array $sources, array $layeredAttributes, $fallbackText): string {
         $attr = [];
         foreach($layeredAttributes as $attributes) {
             $attr = array_merge($attr, $attributes);
@@ -182,8 +156,7 @@ class HtmlPresenter implements PresenterInterface {
      * @param array  $layeredAttributes
      * @return string
      */
-
-    public function renderLink($content, array $layeredAttributes) {
+    public function renderLink(string $content, array $layeredAttributes) {
         $attr = [];
         foreach($layeredAttributes as $attributes) {
             $attr = array_merge($attr, $attributes);
@@ -197,13 +170,9 @@ class HtmlPresenter implements PresenterInterface {
      * @param array $sources
      * @return null|string
      */
-    public function composeSrcSetAttribute(array $sources) {
+    public function composeSrcSetAttribute(array $sources): ?string {
         if(isset($sources['imageSrcSet']) && !empty($sources['imageSrcSet'])) {
-            $srcset = [];
-            foreach($sources['imageSrcSet'] as $width => $filename) {
-                $srcset[] = $filename . ' ' . $width . 'w';
-            }
-            return implode(', ', $srcset);
+            return implode(', ', $sources['imageSrcSet']);
         }
 
         return null;
@@ -222,11 +191,11 @@ class HtmlPresenter implements PresenterInterface {
     /**
      * Returns the mime type of the given audio resource.
      *
-     * @param Media $audio
+     * @param string $filename
      * @return string
      */
-    protected function getMimeTypeFromAudio(Media $audio) {
-        $extension = substr(strrchr($audio->getFilename(), "."), 1);
+    protected function getMimeTypeFromAudio(string $filename): string {
+        $extension = substr(strrchr($filename, "."), 1);
 
         switch($extension) {
             case 'ogx':
@@ -247,7 +216,7 @@ class HtmlPresenter implements PresenterInterface {
      * @return string
      */
 
-    protected function getFilename($filename, $external) {
+    protected function getFilename(string $filename, bool $external): string {
         $filename = $this->config->get('oxygen.mod-media.directory.web') . '/' . $filename;
         if($external) {
             return $this->url->to($filename);
@@ -261,39 +230,28 @@ class HtmlPresenter implements PresenterInterface {
      * @param array $attributes
      * @return boolean
      */
-    protected function isExternal($attributes) {
+    protected function isExternal($attributes): bool {
         return isset($attributes['external']) && $attributes['external'] === true;
     }
 
     /**
      * Displays the Media.
      *
-     * @param Media      $media
+     * @param Media $media
      * @param string|null $template
-     * @param array       $customAttributes
-     * @return mixed
+     * @param array $customAttributes
+     * @throws \Exception
      */
     public function display(Media $media, $template = null, array $customAttributes = []) {
         $external = $this->isExternal($customAttributes);
         unset($customAttributes['external']);
 
         if($media->getType() === Media::TYPE_IMAGE) {
-            $versions = Arr::where($this->getMedia(), function($value, $key) use($media) {
-                return preg_match('/' . preg_quote($media->getSlug(), '/') . '\/[0-9]+/', $key);
-            });
+            $src = $this->getFilename($media->getFilename(), $external);
 
             $srcset = [];
-            foreach($versions as $key => $value) {
-                unset($versions[$key]);
-                preg_match('/' . preg_quote($media->getSlug(), '/') . '\/([0-9]+)/', $key, $matches);
-                $versions[$matches[1]] = $value;
-                $srcset[$matches[1]] = $this->getFilename($value->getFilename(), $external);
-            }
-
-            if($media->getDefault()) {
-                $src = $this->getFilename($versions[$media['default']]->getFilename(), $external);
-            } else {
-                $src = $this->getFilename($media->getFilename(), $external);
+            foreach($media->getVariants() as $variant) {
+                $srcset[] = $this->getFilename($variant['filename'], $external) . ' ' . $variant['width'] . 'w';
             }
 
             $template = $this->getTemplate($template, Media::TYPE_IMAGE);
@@ -308,17 +266,12 @@ class HtmlPresenter implements PresenterInterface {
                 $customAttributes
             );
         } else if($media->getType() === Media::TYPE_AUDIO) {
-            $versions = Arr::where($this->getMedia(), function($key, $value) use($media) {
-                return preg_match('/' . preg_quote($media->getSlug()) . '\/[a-z]+/', $key);
-            });
-
             $sources = [
-                $this->getMimeTypeFromAudio($media) => $this->getFilename($media->getFilename(), $external)
+                $this->getMimeTypeFromAudio($media->getFilename()) => $this->getFilename($media->getFilename(), $external)
             ];
-            foreach($versions as $key => $value) {
-                if($value->getType() === Media::TYPE_AUDIO) {
-                    $sources[$this->getMimeTypeFromAudio($value)] = $this->getFilename($value->getFilename(), $external);
-                }
+
+            foreach($media->getVariants() as $variant) {
+                $sources[$this->getMimeTypeFromAudio($variant['filename'])] = $this->getFilename($variant['filename'], $external);
             }
 
             $template = $this->getTemplate($template, Media::TYPE_AUDIO);
@@ -336,29 +289,32 @@ class HtmlPresenter implements PresenterInterface {
             $url = $this->getFilename($media->getFilename(), $external);
             $template = $this->getTemplate($template, Media::TYPE_DOCUMENT);
             $template($this, $media, ['main' => $url], $customAttributes);
+        } else {
+            throw new \Exception('Unknown media type ' . $media->getType());
         }
     }
 
     /**
      * Displays the Media.
      *
-     * @param string      $slug
+     * @param string $slug
      * @param string|null $template
-     * @param array       $customAttributes
+     * @param array $attributes
      * @return mixed
+     * @throws \Exception
      */
-    public function present($slug, $template = null, array $customAttributes = []) {
+    public function present(string $slug, $template = null, array $attributes = []) {
         global $__env;
-        
+
         try {
-            $item = $this->entities->findBySlug($slug);
+            $item = $this->entities->findByPath($slug);
             if(isset($__env) && method_exists($__env, 'viewDependsOnEntity')) {
                 $__env->viewDependsOnEntity($item);
             }
             if($this->useAbsoluteURLs = true) {
-                $customAttributes['external'] = true;
+                $attributes['external'] = true;
             }
-            return $this->display($item, $template, $customAttributes);
+            return $this->display($item, $template, $attributes);
         } catch(NoResultException $e) {
             if(isset($__env) && method_exists($__env, 'viewDependsOnAllEntities')) {
                 $__env->viewDependsOnAllEntities(Media::class);
@@ -368,32 +324,12 @@ class HtmlPresenter implements PresenterInterface {
     }
 
     /**
-     * Previews the given media item.
-     *
-     * @param Media $media
-     * @return string
-     */
-    public function preview(Media $media) {
-        switch($media->getType()) {
-            case Media::TYPE_IMAGE:
-                return '<img src="' . $this->getFilename($media->getFilename(), false) . '">';
-                break;
-            case Media::TYPE_AUDIO:
-                return '<div class="Icon-container"><span class="fa Icon--gigantic Icon--light fa-music"></span></div>'; //<audio src="' . $filename . '" preload="none" controls></audio>';
-                break;
-            case Media::TYPE_DOCUMENT:
-            default:
-                return '<div class="Icon-container"><span class="fa Icon--gigantic Icon--light fa-file-text"></span></div>';
-        }
-    }
-
-    /**
      * Whether the presenter should use absolute URLs to the resource
      *
      * @param boolean $use
      * @return void
      */
-    public function setUseAbsoluteURLs($use) {
+    public function setUseAbsoluteURLs(bool $use) {
         $this->useAbsoluteURLs = $use;
     }
 
