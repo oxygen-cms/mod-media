@@ -12,17 +12,17 @@ interface PresenterInterface {
      * @param boolean $use
      * @return void
      */
-    public function setUseAbsoluteURLs($use);
+    public function setUseAbsoluteURLs(bool $use);
 
     /**
      * Displays the Media.
      *
-     * @param string        $slug
+     * @param string $slug
      * @param string|null   $template
      * @param array         $attributes
      * @return mixed
      */
-    public function present($slug, $template = null, array $attributes = []);
+    public function present(string $slug, $template = null, array $attributes = []);
 
     /**
      * Displays the Media.
@@ -33,13 +33,5 @@ interface PresenterInterface {
      * @return mixed
      */
     public function display(Media $media, $template = null, array $attributes = []);
-
-    /**
-     * Previews the given media item.
-     *
-     * @param Media $media
-     * @return string
-     */
-    public function preview(Media $media);
 
 }

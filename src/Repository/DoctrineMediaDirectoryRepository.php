@@ -1,40 +1,36 @@
 <?php
 
+
 namespace OxygenModule\Media\Repository;
 
+use Doctrine\ORM\NonUniqueResultException;
 use Doctrine\ORM\NoResultException as DoctrineNoResultException;
 use Doctrine\ORM\Query\Expr\Join;
-use Oxygen\Data\Repository\ExcludeTrashedScope;
-use Oxygen\Data\Repository\ExcludeVersionsScope;
-use OxygenModule\Media\Entity\Media;
 use Oxygen\Data\Exception\NoResultException;
 use Oxygen\Data\Repository\Doctrine\Repository;
-use Oxygen\Data\Repository\Doctrine\Versions;
-use Oxygen\Data\Repository\QueryParameters;
+use Oxygen\Data\Repository\ExcludeTrashedScope;
 use OxygenModule\Media\Entity\MediaDirectory;
 
-class DoctrineMediaRepository extends Repository implements MediaRepositoryInterface {
-
-    use Versions;
+class DoctrineMediaDirectoryRepository extends Repository implements MediaDirectoryRepositoryInterface {
 
     /**
      * The name of the entity.
      *
      * @var string
      */
-    protected $entityName = Media::class;
+    protected $entityName = MediaDirectory::class;
 
     /**
-     * Finds an Media item based upon the path.
+     * Finds a directory based upon the path.
      *
      * @param string $path
-     * @return Media
-     * @throws \Doctrine\ORM\NonUniqueResultException
+     * @return MediaDirectory
+     * @throws NonUniqueResultException
      * @throws NoResultException
      */
-    public function findByPath(string $path): Media {
-        $pathParts = explode('/', $path);
-        $finalPart = array_pop($pathParts);
+    public function findByPath(string $path): MediaDirectory {
+        $slugParts = explode('/', $path);
+        $finalPart = array_pop($slugParts);
 
         $qb = $this->entities
             ->createQueryBuilder()
@@ -44,7 +40,7 @@ class DoctrineMediaRepository extends Repository implements MediaRepositoryInter
             ->setParameter('name0', $finalPart);
 
         $i = 1;
-        while($nextPart = array_pop($pathParts)) {
+        while($nextPart = array_pop($slugParts)) {
             $prevI = $i-1;
             $qb = $qb->innerJoin(MediaDirectory::class, "d$i", Join::WITH, "d$prevI.parentDirectory = d$i.id")
                 ->andWhere("d$i.slug = :name$i")
@@ -56,7 +52,6 @@ class DoctrineMediaRepository extends Repository implements MediaRepositoryInter
         $qb->andWhere("d$prevI.parentDirectory is NULL");
 
         (new ExcludeTrashedScope())->apply($qb, 'd0');
-        (new ExcludeVersionsScope())->apply($qb, 'd0');
 
         $q = $qb->getQuery();
         try {
@@ -64,23 +59,6 @@ class DoctrineMediaRepository extends Repository implements MediaRepositoryInter
         } catch(DoctrineNoResultException $e) {
             throw $this->makeNoResultException($e, $q);
         }
-    }
-
-    /**
-     * Lists all media items by the slug.
-     *
-     * @return array
-     */
-    public function listBySlug() {
-        $results = $this->getQuery($this->createSelectQuery()->orderBy('o.headVersion', 'ASC')->addOrderBy('o.updatedAt', 'DESC'), new QueryParameters([new ExcludeTrashedScope()]))->getResult();
-
-        $sluggedResults = [];
-
-        foreach(array_reverse($results) as $media) {
-            $sluggedResults[$media->getSlug()] = $media;
-        }
-
-        return $sluggedResults;
     }
 
 }

@@ -3,26 +3,33 @@
 namespace OxygenModule\Media\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Expr\Value;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping AS ORM;
+use Illuminate\Contracts\Support\Arrayable;
 use Oxygen\Data\Behaviour\Accessors;
 use Oxygen\Data\Behaviour\CacheInvalidator;
 use Oxygen\Data\Behaviour\CacheInvalidatorInterface;
 use Oxygen\Data\Behaviour\Fillable;
+use Oxygen\Data\Behaviour\FillableInterface;
+use Oxygen\Data\Behaviour\HasUpdatedAt;
 use Oxygen\Data\Behaviour\PrimaryKey;
 use Oxygen\Data\Behaviour\PrimaryKeyInterface;
 use Oxygen\Data\Behaviour\SoftDeletes;
 use Oxygen\Data\Behaviour\Searchable;
 use Oxygen\Data\Behaviour\Timestamps;
+use Oxygen\Data\Behaviour\Versionable;
 use Oxygen\Data\Behaviour\Versions;
+use Oxygen\Data\Validation\Rules\Unique;
 use Oxygen\Data\Validation\Validatable;
+use Oxygen\Data\Validation\ValidationService;
 
 /**
  * @ORM\Entity
  * @ORM\Table(name="media")
  * @ORM\HasLifecycleCallbacks
  */
-
-class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterface, Searchable {
+class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterface, Searchable, Versionable, HasUpdatedAt, Arrayable, FillableInterface {
 
     use PrimaryKey, Timestamps, SoftDeletes, Versions, CacheInvalidator;
     use Accessors, Fillable;
@@ -34,64 +41,65 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     /**
      * @ORM\Column(type="string")
      */
-
     protected $name;
 
     /**
      * @ORM\Column(type="string")
      */
-
     protected $slug;
 
     /**
      * @ORM\Column(type="string")
      */
-
     protected $filename;
+
+    /**
+     * @ORM\Column(type="json", nullable=true)
+     */
+    protected $alternativeFiles;
 
     /**
      * @ORM\Column(type="string", nullable=true)
      */
-
     protected $author;
 
     /**
      * @ORM\Column(type="text", nullable=true)
      */
-
     protected $caption;
 
     /**
      * @ORM\Column(type="text", nullable=true)
      */
-
     protected $description;
 
     /**
      * @ORM\Column(type="integer")
      */
-
     protected $type;
 
     /**
      * @ORM\Column(name="`default`", type="string", nullable=true)
      */
-
     protected $default;
 
     /**
      * @ORM\OneToMany(targetEntity="OxygenModule\Media\Entity\Media", mappedBy="headVersion", cascade={"persist", "remove", "merge"})
      * @ORM\OrderBy({ "updatedAt" = "DESC" })
      */
-
     private $versions;
 
     /**
      * @ORM\ManyToOne(targetEntity="OxygenModule\Media\Entity\Media",  inversedBy="versions")
      * @ORM\JoinColumn(name="head_version", referencedColumnName="id")
      */
-
     private $headVersion;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="OxygenModule\Media\Entity\MediaDirectory",  inversedBy="childFiles")
+     * @ORM\JoinColumn(name="directory", referencedColumnName="id", nullable=true)
+     */
+    private $parentDirectory;
 
     /**
      * Constructs a new Media item.
@@ -100,6 +108,8 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     public function __construct() {
         $this->versions = new ArrayCollection();
         $this->type = self::TYPE_IMAGE;
+        $this->parentDirectory = null;
+        $this->alternativeFiles = [];
     }
 
     /**
@@ -137,19 +147,12 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     }
 
     /**
-     * Generates a new unique filename for the Media resource.
+     * Sets the filename.
      *
-     * @param string $extension
-     * @return $this
+     * @param string $filename new filename, should be the hash of the file contents
      */
-
-    public function makeNewFilename($extension = null) {
-        if($extension === null) {
-            $extension = $this->getExtension();
-        }
-
-        $this->filename = md5($this->slug . rand()) . '.' . $extension;
-        return $this;
+    public function setFilename(string $filename) {
+        $this->filename = $filename;
     }
 
     /**
@@ -158,6 +161,22 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     public function getExtension() {
         $parts = explode('.', $this->filename);
         return end($parts);
+    }
+
+    /**
+     * Returns a list of alternative files for this media item.
+     *
+     * Specifically, will be a list of different-sized versions of an image,
+     * to serve responsive images.
+     *
+     * @return array
+     */
+    public function getVariants(): array {
+        return $this->alternativeFiles === null ? [] : $this->alternativeFiles;
+    }
+
+    public function clearVariants(): array {
+        return $this->alternativeFiles = [];
     }
 
     /**
@@ -174,9 +193,9 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
             ],
             'slug' => [
                 'required',
-                'slugExtended',
+                'slug',
                 'max:255',
-                $this->getUniqueValidationRule('slug')
+                $this->getUniqueSlugValidationRule()
             ],
             'filename' => [
                 'required',
@@ -195,13 +214,100 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     }
 
     /**
+     * Returns the path to this image, including any directories.
+     *
+     * @return string
+     */
+    public function getFullPath() {
+        $path = $this->parentDirectory !== null ? $this->parentDirectory->getFullPath() : '';
+        $path .= '/' . $this->slug . '.' . $this->getExtension();
+        return ltrim($path, '/');
+    }
+
+    /**
+     * `name` must be unique, amongst directories that are siblings.
+     *
+     * @return string
+     */
+    private function getUniqueSlugValidationRule(): Unique {
+        return Unique::amongst(Media::class)->field('slug')->ignoreWithId($this->getId())
+            ->addWhere('parentDirectory', ValidationService::EQUALS, $this->parentDirectory ? $this->parentDirectory->getId() : null)
+            ->addWhere('headVersion', ValidationService::NOT_EQUALS, $this->getHeadId());
+    }
+
+    /**
+     * @param string|int|null $parentDirectory
+     * @return $this
+     */
+    public function setParentDirectory($parentDirectory): Media {
+        if(is_integer($parentDirectory)) {
+            $this->parentDirectory = app(EntityManager::class)->getReference(MediaDirectory::class, $parentDirectory);
+        } else {
+            $this->parentDirectory = $parentDirectory;
+        }
+        return $this;
+    }
+
+    public function getFilename() {
+        return $this->filename;
+    }
+
+    /**
+     * Adds a new variant to this image.
+     *
+     * @param string $filename
+     * @param int $width
+     */
+    public function addVariant(string $filename, int $width) {
+        $this->alternativeFiles[] = [
+            'filename' => $filename,
+            'width' => $width
+        ];
+    }
+
+    /**
+     * @return int
+     */
+    public function getType(): int {
+        return $this->type;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTypeAsString(): string {
+        if($this->type == self::TYPE_IMAGE) {
+            return 'Image';
+        } else if($this->type == self::TYPE_AUDIO) {
+            return 'Audio';
+        } else if($this->type == self::TYPE_DOCUMENT) {
+            return 'Document';
+        } else {
+            return 'Unknown';
+        }
+    }
+
+    /**
+     * Returns true if there already exists a variant at this width.
+     * @param int $size
+     * @return bool
+     */
+    public function hasVariant(int $size) {
+        foreach($this->getVariants() as $variant) {
+            if($variant['width'] === $size) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Returns the fields that should be fillable.
      *
      * @return array
      */
-
-    protected function getFillableFields() {
-        return ['name', 'slug', 'author', 'alt', 'caption', 'description', 'default', 'type'];
+    public function getFillableFields(): array {
+        return ['name', 'slug', 'author', 'alt', 'caption', 'description', 'default', 'type', 'parentDirectory'];
     }
 
     /**
@@ -210,7 +316,32 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
      * @return array
      */
     public static function getSearchableFields() {
-        return ['name', 'slug', 'description'];
+        return ['name', 'slug', 'description', 'filename'];
     }
 
+    /**
+     * Get the instance as an array.
+     *
+     * @return array
+     */
+    public function toArray() {
+        return [
+            'id' => $this->getId(),
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'filename' => $this->filename,
+            'variants' => $this->getVariants(),
+            'extension' => $this->getExtension(),
+            'fullPath' => $this->getFullPath(),
+            'author' => $this->author,
+            'caption' => $this->caption,
+            'description' => $this->description,
+            'type' => $this->type,
+            'default' => $this->default,
+            'headVersion' => $this->headVersion === null ? null : $this->headVersion->getId(),
+            'createdAt' => $this->createdAt !== null ? $this->createdAt->format(\DateTimeInterface::ATOM) : null,
+            'updatedAt' => $this->updatedAt !== null ? $this->updatedAt->format(\DateTimeInterface::ATOM) : null,
+            'deletedAt' => $this->deletedAt !== null ? $this->deletedAt->format(\DateTimeInterface::ATOM) : null
+        ];
+    }
 }

@@ -3,66 +3,132 @@
 namespace OxygenModule\Media\Controller;
 
 use Exception;
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 
-use Illuminate\View\View;
 use Intervention\Image\Image;
-use Oxygen\Core\Blueprint\BlueprintNotFoundException;
+use  Intervention\Image\Facades\Image as ImageFacade;
+use Oxygen\Crud\Controller\BasicCrudApi;
+use Oxygen\Crud\Controller\SoftDeleteCrudApi;
+use Oxygen\Crud\Controller\VersionableCrudApi;
 use Oxygen\Data\Exception\NoResultException;
-use OxygenModule\Media\MediaFieldSet;
+use Oxygen\Data\Pagination\PaginationService;
+use Oxygen\Data\Repository\ExcludeTrashedScope;
+use Oxygen\Data\Repository\ExcludeVersionsScope;
+use Oxygen\Data\Repository\OnlyTrashedScope;
+use Oxygen\Data\Repository\SearchMultipleFieldsClause;
 use OxygenModule\Media\Entity\Media;
-use OxygenModule\Media\MacroProcessor;
 use Oxygen\Data\Repository\QueryParameters;
+use OxygenModule\Media\Repository\InRootDirectoryClause;
+use OxygenModule\Media\Repository\MediaDirectoryRepositoryInterface;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use Illuminate\Support\MessageBag;
-use Oxygen\Core\Blueprint\BlueprintManager;
 use Oxygen\Core\Http\Notification;
-use Oxygen\Crud\Controller\VersionableCrudController;
 use Oxygen\Data\Exception\InvalidEntityException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Intervention\Image\Facades\Image as ImageFacade;
 
-class MediaController extends VersionableCrudController {
+class MediaController extends Controller {
+
+    const PER_PAGE = 50;
+
+    const LANG_MAPPINGS = [
+        'resource' => 'Media Item',
+        'pluralResource' => 'Media Items'
+    ];
+
+    const RESPONSIVE_SIZES = [320, 640, 960, 1280];
+
+    /**
+     * @var MediaRepositoryInterface
+     */
+    private $repository;
+
+    /**
+     * @var MediaDirectoryRepositoryInterface
+     */
+    private $directoryRepository;
+
+    use BasicCrudApi, SoftDeleteCrudApi, VersionableCrudApi {
+        VersionableCrudApi::getListQueryParameters insteadof BasicCrudApi, SoftDeleteCrudApi;
+        SoftDeleteCrudApi::deleteDeleteApi insteadof BasicCrudApi;
+    }
 
     /**
      * Constructs the PagesController.
      *
-     * @param MediaRepositoryInterface          $repository
-     * @param BlueprintManager                  $manager
-     * @param MediaFieldSet $fields
-     * @throws BlueprintNotFoundException
+     * @param MediaRepositoryInterface $repository
+     * @param MediaDirectoryRepositoryInterface $directoryRepository
      */
 
-    public function __construct(MediaRepositoryInterface $repository, BlueprintManager $manager, MediaFieldSet $fields) {
-        parent::__construct($repository, $manager->get('Media'), $fields);
+    public function __construct(MediaRepositoryInterface $repository, MediaDirectoryRepositoryInterface $directoryRepository) {
+        $this->repository = $repository;
+        $this->directoryRepository = $directoryRepository;
+
+        BasicCrudApi::setupLangMappings(self::LANG_MAPPINGS);
     }
 
     /**
      * List all entities.
      *
-     * @param QueryParameters $queryParameters
-     * @return View
+     * @param Request $request
+     * @param PaginationService $paginationService
+     * @return JsonResponse
+     * @throws \Doctrine\ORM\NonUniqueResultException
      */
-    public function getList($queryParameters = null) {
-        if($queryParameters == null) {
-            $queryParameters = QueryParameters::make()
-                ->excludeTrashed()
-                ->excludeVersions()
-                ->orderBy('id', QueryParameters::DESCENDING);
+    public function getListApi(Request $request, PaginationService $paginationService): JsonResponse {
+        $path = $request->get('path');
+        $trash = $request->get('trash') == 'true';
+
+        if($trash) {
+            $paginator = $this->repository->paginate(self::PER_PAGE,
+                QueryParameters::make()
+                    ->addClause(new ExcludeVersionsScope())
+                    ->addClause(new OnlyTrashedScope())
+                    ->orderBy('name', QueryParameters::ASCENDING)
+            );
+            $childDirectories = [];
+        } else if ($path !== '' && $path !== null) {
+            $directory = $this->directoryRepository->findByPath($path);
+            $paginator = $directory->paginateChildFiles($paginationService, self::PER_PAGE, $paginationService->getCurrentPage());
+            $childDirectories = $directory->getChildDirectories()->toArray();
+        } else {
+            $query = QueryParameters::make()
+                ->addClause(new ExcludeVersionsScope())
+                ->addClause(new ExcludeTrashedScope())
+                ->orderBy('name', QueryParameters::ASCENDING);
+
+            $searchQuery = $request->input('q', null);
+            if($searchQuery !== null) {
+                $query->addClause(new SearchMultipleFieldsClause(Media::getSearchableFields(), $searchQuery));
+            } else {
+                $query->addClause(new InRootDirectoryClause());
+            }
+
+            $paginator = $this->repository->paginate(self::PER_PAGE, $query);
+            $childDirectories = $searchQuery != null ? [] : $this->directoryRepository->all(
+                QueryParameters::make()
+                    ->addClause(new InRootDirectoryClause())
+                    ->addClause(new ExcludeTrashedScope())
+                    ->orderBy('name', QueryParameters::ASCENDING)
+            );
         }
 
-        $this->maybeAddSearchClause($queryParameters);
-
-        $items = $this->repository->paginate(25, $queryParameters);
-
-        // render the view
-        return view('oxygen/mod-media::list', [
-            'items' => $items,
-            'isTrash' => false
+        return response()->json([
+            'currentDirectory' => isset($directory) ? $directory->toArray() : null,
+            'directories' => array_map(function ($item) {
+                return $item->toArray();
+            }, $childDirectories),
+            'files' => array_map(function ($item) {
+                return $item->toArray();
+            }, $paginator->items()),
+            'totalFiles' => $paginator->total(),
+            'filesPerPage' => $paginator->perPage(),
+            'status' => Notification::SUCCESS,
         ]);
     }
 
@@ -71,12 +137,12 @@ class MediaController extends VersionableCrudController {
      *
      * @return BinaryFileResponse
      */
-    public function getView($slug, $extension) {
+    public function getView($slug, $extension): ?BinaryFileResponse {
         try {
-            $media = $this->repository->findBySlug($slug);
+            $media = $this->repository->findByPath($slug);
             return new BinaryFileResponse(config('oxygen.mod-media.directory.filesystem') . '/' . basename($media->getFilename()), 200, [], true);
         } catch(FileNotFoundException $e) {
-            abort(404);
+            abort(410);
             return null;
         } catch(NoResultException $e) {
             abort(404);
@@ -85,104 +151,19 @@ class MediaController extends VersionableCrudController {
     }
 
     /**
-     * Returns the raw resource.
+     * Uploads a Media item.
      *
-     * @param mixed    $item
-     * @param array    $input
-     * @param callable $respond
-     * @return BinaryFileResponse
-     * @throws Exception
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function getRaw($item, array $input = null, $respond = null) {
-        $item = $this->getItem($item);
-        $filename = config('oxygen.mod-media.directory.filesystem') . '/' . basename($item->getFilename());
-
-        if($input === null) {
-            $input = request()->all();
-        }
-
-        if($respond === null) {
-            $respond = function($image, $newVersion, $oldVersion) {
-                return $image->response();
-            };
-        }
-
-        if($item->getType() === Media::TYPE_IMAGE && count($input) > 0) {
-            if(isset($input['save']) && $input['save'] === 'true') {
-                $oldVersion = $this->repository->makeNewVersion($item, false);
-                $item->makeNewFilename();
-            }
-
-            $macro = $input;
-            unset($macro['save'], $macro['name'], $macro['slug']);
-
-            $macroProcessor = new MacroProcessor($macro);
-            $image = $macroProcessor->process(ImageFacade::make($filename));
-
-            if(isset($input['save']) && $input['save'] === 'true') {
-                $image->save(config('oxygen.mod-media.directory.filesystem') . '/' . $item->getFilename());
-
-                $name = $input['name'];
-                $slug = $input['slug'];
-                $item->setName(is_callable($name) ? $name($image) : $name);
-                $item->setSlug(is_callable($slug) ? $slug($image) : $slug);
-                $this->repository->persist($item, 'overwrite');
-            }
-
-            return $respond($image, $item, isset($oldVersion) ? $oldVersion : null);
-        } else {
-            try {
-                return new BinaryFileResponse($filename);
-            } catch(FileNotFoundException $e) {
-                abort(404);
-            }
-        }
-    }
-
-    /**
-     * Shows the update form.
-     *
-     * @param mixed $item the item
-     * @return View
-     */
-    public function getUpdate($item) {
-        $item = $this->getItem($item);
-
-        return view('oxygen/mod-media::update')
-            ->with('item', $item);
-    }
-
-    /**
-     * Displays the image editor.
-     *
-     * @param mixed $item
-     * @return View
-     */
-    public function getEditImage($item) {
-        $item = $this->getItem($item);
-
-        if($item->getType() !== Media::TYPE_IMAGE) {
-            return notify(new Notification(__('oxygen/mod-media::messages.onlyAbleToEditImages'), Notification::FAILED));
-        }
-
-        return view('oxygen/mod-media::editImage')
-            ->with('item', $item);
-    }
-
-    /**
-     * Show the upload form.
-     *
-     * @return View
-     */
-    public function getUpload() {
-        return view('oxygen/mod-media::upload')
-            ->with('media', $this->repository->listKeysAndValues('id', 'name', new QueryParameters(['excludeVersions'])));
+    public function postCreateApi(Request $request): JsonResponse {
+        return $this->postUpload($request);
     }
 
     /**
      * Process the uploaded file.
      *
-     * @return Response
+     * @return JsonResponse
      */
     public function postUpload(Request $input) {
         // if no file has been uploaded
@@ -202,6 +183,7 @@ class MediaController extends VersionableCrudController {
         $files = $input->file('file');
         $name = $input->get('name', '')  === '' ? null : $input->get('name');
         $slug = $input->get('slug', '')  === '' ? null : $input->get('slug');
+        $parentDirectoryId = $input->get('parentDirectory', null) ? intval($input->get('parentDirectory')) : null;
         $headVersion = $input->get('headVersion', '_new') === '_new' ? null : (int) $input->get('headVersion');
         $text = '';
         $success = true;
@@ -209,10 +191,11 @@ class MediaController extends VersionableCrudController {
         foreach($files as $file) {
             $text .= '<strong>' . $file->getClientOriginalName() . '</strong><br>';
 
-            $return = $this->makeFromFile($file, $name, $slug, $headVersion);
+            $return = $this->makeFromFile($file, $name, $slug, $headVersion, $parentDirectoryId);
 
             if(!$return->has('success')) {
                 $success = false;
+                break;
             }
 
             $text .= implode('<br>', $return->all()) . '<br>';
@@ -221,14 +204,15 @@ class MediaController extends VersionableCrudController {
         $this->repository->flush();
 
         if($success) {
-            return notify(
-                new Notification($text),
-                ['redirect' => $this->blueprint->getRouteName('getList')]
-            );
+            return response()->json([
+                'message' => $text,
+                'status' => Notification::SUCCESS
+            ]);
         } else {
-            return notify(
-                new Notification($text, Notification::FAILED)
-            );
+            return response()->json([
+                'message' => $text,
+                'status' => Notification::FAILED
+            ]);
         }
     }
 
@@ -241,7 +225,7 @@ class MediaController extends VersionableCrudController {
      * @param string $headVersion
      * @return \Illuminate\Contracts\Support\MessageBag messages
      */
-    protected function makeFromFile(UploadedFile $file, $name = null, $slug = null, $headVersion = null) {
+    protected function makeFromFile(UploadedFile $file, $name = null, $slug = null, $headVersion = null, ?int $parentDirectoryId = null): \Illuminate\Contracts\Support\MessageBag {
         if(!$file->isValid()) {
             $messages = new MessageBag();
             return $messages->add('exists', __('oxygen/crud::messages.upload.failed', [
@@ -289,7 +273,8 @@ class MediaController extends VersionableCrudController {
             $media->setName($name)
                   ->setSlug($slug)
                   ->setType($type)
-                  ->makeNewFilename($extension);
+                  ->setParentDirectory($parentDirectoryId)
+                  ->setFilename($this->hashFileAndMove($file, $extension));
 
             if($headVersion !== null) {
                 $media->setHead($this->repository->getReference($headVersion));
@@ -297,9 +282,8 @@ class MediaController extends VersionableCrudController {
 
             $this->repository->persist($media, false);
 
-            $file->move(config('oxygen.mod-media.directory.filesystem'), $media->getFilename());
-
             $messages = new MessageBag();
+
             return $messages->add('success', __('oxygen/crud::messages.upload.success', [
                 'name' => $file->getClientOriginalName()
             ]));
@@ -308,45 +292,67 @@ class MediaController extends VersionableCrudController {
         }
     }
 
+    private function hashFileAndMove(File $file, $extension) {
+        // this way we also deduplicate files
+        $fileHash = hash_file('sha256', $file->getRealPath(), false);
+        $filename = $fileHash . '.' . $extension;
+        $file->move(config('oxygen.mod-media.directory.filesystem'), $filename);
+        return $filename;
+    }
+
     /**
      * Makes a resized version of the image.
      *
-     * @param Media $image
-     * @param string $size
-     * @param string $name
-     * @return BinaryFileResponse
+     * @param Media $media
+     * @param int $width
      * @throws Exception
      */
-    protected function resizeImage(Media $image, $size, $name) {
-        return $this->getRaw($image, [
-            'resize' => ['width' => $size, 'keepAspectRatio' => true, 'preventUpsize' => true],
-            'save' => 'true',
-            'name' => $image->getName() . ' (' . $name . ')',
-            'slug' => function(Image $intervention) use($image) {
-                return $image->getSlug() . '/' . $intervention->getWidth();
-            }
-        ], function(Image $image, $newVersion, $oldVersion) {
-            return $oldVersion;
+    protected function resizeImage(Media $media, int $width) {
+        if($media->getType() !== Media::TYPE_IMAGE) {
+            throw new Exception('Media item is not an image');
+        }
+        $image = ImageFacade::make(config('oxygen.mod-media.directory.filesystem') . '/' . $media->getFilename());
+        $image->resize($width, null, function($constraint) {
+            $constraint->aspectRatio();
+            $constraint->upsize();
         });
+        $tmpFilename = config('oxygen.mod-media.directory.filesystem') . '/' . basename($media->getFilename()) . '.' . $width . '.tmp.' . basename($media->getExtension());
+        $image->save($tmpFilename);
+        $variantFilename = $this->hashFileAndMove(new File($tmpFilename), $media->getExtension());
+        $media->addVariant($variantFilename, $width);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function generateImageVariants(Media $media) {
+        foreach(self::RESPONSIVE_SIZES as $size) {
+            if(!$media->hasVariant($size)) {
+                $this->resizeImage($media, $size);
+            }
+        }
+        $this->repository->persist($media, false);
     }
 
     /**
      * Makes multiple 'responsive' versions of the image.
      *
      * @param mixed $item
-     * @return Response
+     * @return JsonResponse
      * @throws Exception
      */
-    public function postMakeResponsive($item) {
+    public function postMakeResponsive($item): JsonResponse {
         $original = $this->getItem($item);
 
-        $original = $this->resizeImage($original, 320, 'Small');
-        $original = $this->resizeImage($original, 640, 'Medium');
-        $original = $this->resizeImage($original, 1280, 'Large');
+        $this->generateImageVariants($original);
+        $this->repository->flush();
 
-        $this->repository->makeHeadVersion($original);
-
-        return notify(new Notification(__('oxygen/mod-media::messages.madeResponsive')), ['refresh' => true]);
+        return response()->json([
+            'message' => __('oxygen/mod-media::messages.madeResponsive'),
+            'status' => Notification::SUCCESS
+        ]);
     }
+
+    // TODO: collect garbage media entries periodically
 
 }
