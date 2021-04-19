@@ -227,7 +227,7 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     /**
      * `name` must be unique, amongst directories that are siblings.
      *
-     * @return string
+     * @return Unique
      */
     private function getUniqueSlugValidationRule(): Unique {
         return Unique::amongst(Media::class)->field('slug')->ignoreWithId($this->getId())

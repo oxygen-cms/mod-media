@@ -79,7 +79,7 @@ class GenerateImageVariantsCommand extends Command {
             }
 
             $prevCount = count($media->getVariants());
-            $controller->generateImageVariants($media, $image);
+            $controller->generateImageVariants($media);
             $generatedVariants = count($media->getVariants()) - $prevCount;
 
             $this->output('<fg=green>Generated</> ' . $generatedVariants . ' variants for ' . $media->getFullPath());

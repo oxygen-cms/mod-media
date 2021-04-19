@@ -337,12 +337,12 @@ class MediaController extends Controller {
     /**
      * Makes multiple 'responsive' versions of the image.
      *
-     * @param mixed $item
+     * @param int $item
      * @return JsonResponse
      * @throws Exception
      */
-    public function postMakeResponsive($item): JsonResponse {
-        $original = $this->getItem($item);
+    public function postMakeResponsive(int $item): JsonResponse {
+        $original = $this->repository->find($item);
 
         $this->generateImageVariants($original);
         $this->repository->flush();
@@ -352,7 +352,5 @@ class MediaController extends Controller {
             'status' => Notification::SUCCESS
         ]);
     }
-
-    // TODO: collect garbage media entries periodically
 
 }

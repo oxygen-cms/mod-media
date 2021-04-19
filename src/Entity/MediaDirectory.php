@@ -86,7 +86,7 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
     /**
      * `name` must be unique, amongst directories that are siblings.
      *
-     * @return string
+     * @return Unique
      */
     private function getUniqueAmongstSiblingsValidationRule($field): Unique {
         return Unique::amongst(MediaDirectory::class)
@@ -143,7 +143,7 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
     }
 
     /**
-     * @return mixed
+     * @return Collection
      */
     public function getChildDirectories(): Collection {
         return $this->childDirectories;
@@ -193,8 +193,8 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
 
     /**
      * @param PaginationService $pagination
-     * @param $perPage
-     * @param $currentPage
+     * @param int $perPage
+     * @param int $currentPage
      * @return LengthAwarePaginator
      */
     public function paginateChildFiles(PaginationService $pagination, $perPage, $currentPage): LengthAwarePaginator {
