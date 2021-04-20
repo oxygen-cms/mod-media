@@ -67,7 +67,7 @@ class AddDirectoriesToMedia extends Migration {
             if($folder->name != '') {
                 $mediaDirectory = new MediaDirectory();
                 $mediaDirectory->setSlug($folder->name);
-                $mediaDirectory->setParent($folder->parent);
+                $mediaDirectory->setParentDirectory($folder->parent);
                 $directories->persist($mediaDirectory, false);
                 $fullPath = ltrim($mediaDirectory->getFullPath(), '/');
             }
