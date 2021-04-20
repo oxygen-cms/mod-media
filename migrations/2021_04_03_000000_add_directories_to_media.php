@@ -2,6 +2,7 @@
 
 use Doctrine\ORM\EntityManagerInterface;
 use Illuminate\Database\Migrations\Migration;
+use Oxygen\Core\Support\Str;
 use Oxygen\Data\Repository\QueryParameters;
 use OxygenModule\Media\Entity\MediaDirectory;
 use OxygenModule\Media\Repository\MediaDirectoryRepositoryInterface;
@@ -67,6 +68,7 @@ class AddDirectoriesToMedia extends Migration {
             if($folder->name != '') {
                 $mediaDirectory = new MediaDirectory();
                 $mediaDirectory->setSlug($folder->name);
+                $mediaDirectory->setName(Str::studly($folder->name));
                 $mediaDirectory->setParentDirectory($folder->parent);
                 $directories->persist($mediaDirectory, false);
                 $fullPath = ltrim($mediaDirectory->getFullPath(), '/');
@@ -81,7 +83,7 @@ class AddDirectoriesToMedia extends Migration {
             }
 
             foreach($folder->children as $child) {
-                $child->setDirectory($mediaDirectory);
+                $child->setParentDirectory($mediaDirectory);
                 $slugParts = explode('/', $child->getSlug());
                 $newSlug = array_pop($slugParts);
                 $child->setSlug($newSlug);

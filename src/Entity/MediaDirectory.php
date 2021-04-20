@@ -142,10 +142,10 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
             $parent = app(EntityManager::class)->find(MediaDirectory::class, $parent);
         }
 
-        $ancestors = array_map(function($ancestor) { return $ancestor->getId(); }, $parent->getAncestors());
-        if(in_array($this->getId(), $ancestors)) {
-            $messageBag = new MessageBag(['Cannot move this directory here: directories would form a cycle.']);
-            throw new InvalidEntityException($this, $messageBag);
+        $ancestors = $parent->getAncestors();
+        if(in_array($this, $ancestors)) {
+            $msg = 'Cannot move this directory here: directories would form a cycle.';
+            throw new InvalidEntityException($this, new MessageBag([$msg]));
         }
         $this->parentDirectory = $parent;
     }
