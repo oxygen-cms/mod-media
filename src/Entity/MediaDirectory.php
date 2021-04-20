@@ -7,8 +7,10 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Expr\Comparison;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping AS ORM;
+use http\Message;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use Oxygen\Data\Behaviour\Accessors;
 use Oxygen\Data\Behaviour\Fillable;
@@ -17,6 +19,7 @@ use Oxygen\Data\Behaviour\PrimaryKeyInterface;
 use Oxygen\Data\Behaviour\Searchable;
 use Oxygen\Data\Behaviour\SoftDeletes;
 use Oxygen\Data\Behaviour\Timestamps;
+use Oxygen\Data\Exception\InvalidEntityException;
 use Oxygen\Data\Pagination\PaginationService;
 use Oxygen\Data\Validation\Rules\Unique;
 use Oxygen\Data\Validation\Validatable;
@@ -44,7 +47,7 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
     protected $name;
 
     /**
-     * @ORM\ManyToOne(targetEntity="OxygenModule\Media\Entity\MediaDirectory", inversedBy="childDirectories")
+     * @ORM\ManyToOne(targetEntity="OxygenModule\Media\Entity\MediaDirectory", inversedBy="childDirectories", fetch="EAGER")
      * @ORM\JoinColumn(name="parent_directory", referencedColumnName="id")
      */
     private $parentDirectory;
@@ -86,9 +89,10 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
     /**
      * `name` must be unique, amongst directories that are siblings.
      *
+     * @param string $field
      * @return Unique
      */
-    private function getUniqueAmongstSiblingsValidationRule($field): Unique {
+    private function getUniqueAmongstSiblingsValidationRule(string $field): Unique {
         return Unique::amongst(MediaDirectory::class)
             ->field($field)->ignoreWithId($this->getId())
             ->addWhere('parentDirectory', ValidationService::EQUALS, $this->parentDirectory ? $this->getParentDirectory()->getId() : null);
@@ -115,14 +119,35 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
     }
 
     /**
-     * @param MediaDirectory|integer|null $parent
+     * @return MediaDirectory[]
      */
-    public function setParent($parent) {
-        if(is_integer($parent)) {
-            $this->parentDirectory = app(EntityManager::class)->getReference(MediaDirectory::class, $parent);
+    public function getAncestors(): array {
+        if($this->parentDirectory === null) {
+            return [$this];
         } else {
-            $this->parentDirectory = $parent;
+            return array_merge([$this], $this->parentDirectory->getAncestors());
         }
+    }
+
+    /**
+     * @param MediaDirectory|integer|null $parent
+     * @throws InvalidEntityException if setting this directory as parent would cause a cycle.
+     */
+    public function setParentDirectory($parent) {
+        if(is_null($parent)) {
+            $this->parentDirectory = $parent;
+            return;
+        }
+        if(is_integer($parent)) {
+            $parent = app(EntityManager::class)->find(MediaDirectory::class, $parent);
+        }
+
+        $ancestors = array_map(function($ancestor) { return $ancestor->getId(); }, $parent->getAncestors());
+        if(in_array($this->getId(), $ancestors)) {
+            $messageBag = new MessageBag(['Cannot move this directory here: directories would form a cycle.']);
+            throw new InvalidEntityException($this, $messageBag);
+        }
+        $this->parentDirectory = $parent;
     }
 
     /**
