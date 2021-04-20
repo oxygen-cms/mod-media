@@ -193,24 +193,24 @@ class MediaController extends Controller {
 
             $return = $this->makeFromFile($file, $name, $slug, $headVersion, $parentDirectoryId);
 
+            $text .= implode('<br>', $return->all()) . '<br>';
+
             if(!$return->has('success')) {
                 $success = false;
                 break;
             }
-
-            $text .= implode('<br>', $return->all()) . '<br>';
         }
 
         $this->repository->flush();
 
         if($success) {
             return response()->json([
-                'message' => $text,
+                'content' => $text,
                 'status' => Notification::SUCCESS
             ]);
         } else {
             return response()->json([
-                'message' => $text,
+                'content' => $text,
                 'status' => Notification::FAILED
             ]);
         }
@@ -348,7 +348,7 @@ class MediaController extends Controller {
         $this->repository->flush();
 
         return response()->json([
-            'message' => __('oxygen/mod-media::messages.madeResponsive'),
+            'content' => __('oxygen/mod-media::messages.madeResponsive'),
             'status' => Notification::SUCCESS
         ]);
     }
