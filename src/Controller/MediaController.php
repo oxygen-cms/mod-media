@@ -109,13 +109,18 @@ class MediaController extends Controller {
                 $query->addClause(new InRootDirectoryClause());
             }
 
+            $directoryQueryParameters = QueryParameters::make();
+            if($searchQuery == null) {
+                $directoryQueryParameters->addClause(new InRootDirectoryClause());
+            } else {
+                $directoryQueryParameters->addClause(new SearchMultipleFieldsClause(['slug', 'name'], $searchQuery));
+            }
+            
+            $directoryQueryParameters
+                ->addClause(new ExcludeTrashedScope())
+                ->orderBy('name', QueryParameters::ASCENDING);
             $paginator = $this->repository->paginate(self::PER_PAGE, $query);
-            $childDirectories = $searchQuery != null ? [] : $this->directoryRepository->all(
-                QueryParameters::make()
-                    ->addClause(new InRootDirectoryClause())
-                    ->addClause(new ExcludeTrashedScope())
-                    ->orderBy('name', QueryParameters::ASCENDING)
-            );
+            $childDirectories = $this->directoryRepository->all($directoryQueryParameters);
         }
 
         return response()->json([
