@@ -115,7 +115,6 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     /**
      * Returns a new name for the Media item.
      */
-
     public function getNewName() {
         $name = $this->name;
         $result = preg_match_all("/.*?(\\d+)$/", $name, $matches);
@@ -132,7 +131,6 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     /**
      * Returns a new slug for the Media item.
      */
-
     public function getNewSlug() {
         $slug = $this->slug;
         $result = preg_match_all("/.*?(\\d+)$/", $slug, $matches);
@@ -341,7 +339,8 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
             'headVersion' => $this->headVersion === null ? null : $this->headVersion->getId(),
             'createdAt' => $this->createdAt !== null ? $this->createdAt->format(\DateTimeInterface::ATOM) : null,
             'updatedAt' => $this->updatedAt !== null ? $this->updatedAt->format(\DateTimeInterface::ATOM) : null,
-            'deletedAt' => $this->deletedAt !== null ? $this->deletedAt->format(\DateTimeInterface::ATOM) : null
+            'deletedAt' => $this->deletedAt !== null ? $this->deletedAt->format(\DateTimeInterface::ATOM) : null,
+            'parentDirectory' => $this->parentDirectory !== null ? $this->parentDirectory->toArray() : null
         ];
     }
 }
