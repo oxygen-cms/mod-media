@@ -8,6 +8,12 @@ MediaController::registerCrudRoutes($router, 'media');
 MediaController::registerSoftDeleteRoutes($router, 'media');
 MediaController::registerVersionableRoutes($router, 'media');
 
+$router->middleware(['web', 'oxygen.auth', '2fa.require'])->group(function() use ($router) {
+    $router->post('/oxygen/api/media/make-responsive', MediaController::class . '@postMakeResponsive')
+        ->name("media.postMakeResponsive")
+        ->middleware("oxygen.permissions:media.postMakeResponsive");
+});
+
 MediaDirectoryController::registerCrudRoutes($router, 'mediaDirectory');
 MediaDirectoryController::registerSoftDeleteRoutes($router, 'mediaDirectory');
 

@@ -10,6 +10,6 @@ return [
     | Messages related to media.
     */
 
-    'madeResponsive' => 'Multiple Sizes of the Image Have Been Created',
+    'madeResponsive' => 'Generated :num responsive image variants',
     'onlyAbleToEditImages' => 'You can only edit images'
 ];
