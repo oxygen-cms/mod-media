@@ -10,10 +10,11 @@ use Oxygen\Data\Repository\ExcludeVersionsScope;
 use Oxygen\Data\Repository\QueryParameters;
 use OxygenModule\Media\Controller\MediaController;
 use OxygenModule\Media\Entity\Media;
+use OxygenModule\Media\ImageVariantGenerator;
+use OxygenModule\Media\ImageVariantGeneratorOutputInterface;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 
-class GenerateImageVariantsCommand extends Command {
-    const MIN_RESPONSIVE_WIDTH = 400;
+class GenerateImageVariantsCommand extends Command implements ImageVariantGeneratorOutputInterface {
 
     /**
      * The console command name.
@@ -33,10 +34,14 @@ class GenerateImageVariantsCommand extends Command {
      */
     private $bar;
 
-    private function output($msg) {
-        $this->bar->clear();
-        $this->output->writeln($msg);
-        $this->bar->display();
+    public function writeln(string $line) {
+        if($this->bar) {
+            $this->bar->clear();
+        }
+        $this->output->writeln($line);
+        if($this->bar) {
+            $this->bar->display();
+        }
     }
 
     /**
@@ -45,52 +50,20 @@ class GenerateImageVariantsCommand extends Command {
      * @return void
      * @throws \Exception
      */
-    public function handle(MediaRepositoryInterface $repository, MediaController $controller) {
-        $generated = 0;
-        $missing = 0;
-        $skipped = 0;
-
-        $all = $repository->all(new QueryParameters([new ExcludeVersionsScope(), new ExcludeTrashedScope()]));
-
-        $this->bar = $this->output->createProgressBar(count($all));
-        foreach($all as $media) {
-            $this->bar->advance();
-            if($media->getType() !== Media::TYPE_IMAGE) {
-                $this->output('<fg=yellow>Skipping</> ' . $media->getFullPath() . ' - type=' . $media->getTypeAsString());
-                $skipped++;
-                continue;
-            }
-
-            $filepath = config('oxygen.mod-media.directory.filesystem') . '/' . $media->getFilename();
-
-            if(!file_exists($filepath)) {
-                $this->output('<fg=red>Error</> ' . $media->getFullPath() . ' - original does not exist');
-                $missing++;
-                continue;
-            }
-
-            $this->output('<fg=green>Generating</> variants for ' . $media->getFullPath());
-
-            $image = ImageFacade::make($filepath);
-            if($image->width() < self::MIN_RESPONSIVE_WIDTH) {
-                $this->output('<fg=yellow>Skipping</> width too small');
-                $skipped++;
-                continue;
-            }
-
-            $prevCount = count($media->getVariants());
-            $controller->generateImageVariants($media);
-            $generatedVariants = count($media->getVariants()) - $prevCount;
-
-            $this->output('<fg=green>Generated</> ' . $generatedVariants . ' variants for ' . $media->getFullPath());
-
-            $generated += $generatedVariants;
-        }
-
-        $repository->flush();
-
-        $this->bar->clear();
-        $this->output->writeln('<fg=green>Summary:</> skipped items: ' . $skipped . ', generated variants: ' . $generated . ', missing files: ' . $missing);
+    public function handle(ImageVariantGenerator $generator) {
+        $generator->generateAllImageVariants($this);
     }
 
+    public function setProgressTotal(int $total) {
+        $this->bar = $this->output->createProgressBar($total);
+    }
+
+    public function advanceProgress() {
+        $this->bar->advance();
+    }
+
+    public function clearProgress() {
+        $this->bar->clear();
+        $this->bar = null;
+    }
 }

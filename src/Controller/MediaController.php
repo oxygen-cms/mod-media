@@ -2,14 +2,14 @@
 
 namespace OxygenModule\Media\Controller;
 
+use Symfony\Component\Console\Output\BufferedOutput;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 
-use Intervention\Image\Image;
-use  Intervention\Image\Facades\Image as ImageFacade;
+use SensioLabs\AnsiConverter\AnsiToHtmlConverter;
 use Oxygen\Crud\Controller\BasicCrudApi;
 use Oxygen\Crud\Controller\SoftDeleteCrudApi;
 use Oxygen\Crud\Controller\VersionableCrudApi;
@@ -21,18 +21,20 @@ use Oxygen\Data\Repository\OnlyTrashedScope;
 use Oxygen\Data\Repository\SearchMultipleFieldsClause;
 use OxygenModule\Media\Entity\Media;
 use Oxygen\Data\Repository\QueryParameters;
+use OxygenModule\Media\ImageVariantGenerator;
+use OxygenModule\Media\ImageVariantGeneratorOutputInterface;
 use OxygenModule\Media\Repository\InRootDirectoryClause;
 use OxygenModule\Media\Repository\MediaDirectoryRepositoryInterface;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use Illuminate\Support\MessageBag;
 use Oxygen\Core\Http\Notification;
 use Oxygen\Data\Exception\InvalidEntityException;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
-use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-class MediaController extends Controller {
+class MediaController extends Controller implements ImageVariantGeneratorOutputInterface {
 
     const PER_PAGE = 50;
 
@@ -40,8 +42,6 @@ class MediaController extends Controller {
         'resource' => 'Media Item',
         'pluralResource' => 'Media Items'
     ];
-
-    const RESPONSIVE_SIZES = [320, 640, 960, 1280];
 
     /**
      * @var MediaRepositoryInterface
@@ -52,6 +52,14 @@ class MediaController extends Controller {
      * @var MediaDirectoryRepositoryInterface
      */
     private $directoryRepository;
+    /**
+     * @var ImageVariantGenerator
+     */
+    private $variantGenerator;
+    /**
+     * @var \Symfony\Component\Console\Output\BufferedOutput
+     */
+    private $consoleOutput = null;
 
     use BasicCrudApi, SoftDeleteCrudApi, VersionableCrudApi {
         VersionableCrudApi::getListQueryParameters insteadof BasicCrudApi, SoftDeleteCrudApi;
@@ -65,9 +73,10 @@ class MediaController extends Controller {
      * @param MediaDirectoryRepositoryInterface $directoryRepository
      */
 
-    public function __construct(MediaRepositoryInterface $repository, MediaDirectoryRepositoryInterface $directoryRepository) {
+    public function __construct(MediaRepositoryInterface $repository, MediaDirectoryRepositoryInterface $directoryRepository, ImageVariantGenerator $variantGenerator) {
         $this->repository = $repository;
         $this->directoryRepository = $directoryRepository;
+        $this->variantGenerator = $variantGenerator;
 
         BasicCrudApi::setupLangMappings(self::LANG_MAPPINGS);
     }
@@ -115,7 +124,7 @@ class MediaController extends Controller {
             } else {
                 $directoryQueryParameters->addClause(new SearchMultipleFieldsClause(['slug', 'name'], $searchQuery));
             }
-            
+
             $directoryQueryParameters
                 ->addClause(new ExcludeTrashedScope())
                 ->orderBy('name', QueryParameters::ASCENDING);
@@ -279,7 +288,7 @@ class MediaController extends Controller {
                   ->setSlug($slug)
                   ->setType($type)
                   ->setParentDirectory($parentDirectoryId)
-                  ->setFilename($this->hashFileAndMove($file, $extension));
+                  ->setFilename($this->variantGenerator->hashFileAndMove($file, $extension));
 
             if($headVersion !== null) {
                 $media->setHead($this->repository->getReference($headVersion));
@@ -297,65 +306,39 @@ class MediaController extends Controller {
         }
     }
 
-    private function hashFileAndMove(File $file, $extension) {
-        // this way we also deduplicate files
-        $fileHash = hash_file('sha256', $file->getRealPath(), false);
-        $filename = $fileHash . '.' . $extension;
-        $file->move(config('oxygen.mod-media.directory.filesystem'), $filename);
-        return $filename;
-    }
-
-    /**
-     * Makes a resized version of the image.
-     *
-     * @param Media $media
-     * @param int $width
-     * @throws Exception
-     */
-    protected function resizeImage(Media $media, int $width) {
-        if($media->getType() !== Media::TYPE_IMAGE) {
-            throw new Exception('Media item is not an image');
-        }
-        $image = ImageFacade::make(config('oxygen.mod-media.directory.filesystem') . '/' . $media->getFilename());
-        $image->resize($width, null, function($constraint) {
-            $constraint->aspectRatio();
-            $constraint->upsize();
-        });
-        $tmpFilename = config('oxygen.mod-media.directory.filesystem') . '/' . basename($media->getFilename()) . '.' . $width . '.tmp.' . basename($media->getExtension());
-        $image->save($tmpFilename);
-        $variantFilename = $this->hashFileAndMove(new File($tmpFilename), $media->getExtension());
-        $media->addVariant($variantFilename, $width);
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function generateImageVariants(Media $media) {
-        foreach(self::RESPONSIVE_SIZES as $size) {
-            if(!$media->hasVariant($size)) {
-                $this->resizeImage($media, $size);
-            }
-        }
-        $this->repository->persist($media, false);
-    }
-
     /**
      * Makes multiple 'responsive' versions of the image.
      *
-     * @param int $item
      * @return JsonResponse
      * @throws Exception
      */
-    public function postMakeResponsive(int $item): JsonResponse {
-        $original = $this->repository->find($item);
+    public function postMakeResponsive(): JsonResponse {
+        $this->consoleOutput = new BufferedOutput(OutputInterface::VERBOSITY_NORMAL, true);
 
-        $this->generateImageVariants($original);
-        $this->repository->flush();
+        $numGenerated = $this->variantGenerator->generateAllImageVariants($this);
+
+        $converter = new AnsiToHtmlConverter();
 
         return response()->json([
-            'content' => __('oxygen/mod-media::messages.madeResponsive'),
-            'status' => Notification::SUCCESS
+            'content' => __('oxygen/mod-media::messages.madeResponsive', ['num' => $numGenerated]),
+            'log' => $converter->convert($this->consoleOutput->fetch()),
+            'status' => $numGenerated === 0 ? Notification::INFO : Notification::SUCCESS
         ]);
     }
 
+    public function setProgressTotal(int $total) {
+        // ignore
+    }
+
+    public function advanceProgress() {
+        // ignore
+    }
+
+    public function writeln(string $line) {
+        $this->consoleOutput->writeln($line);
+    }
+
+    public function clearProgress() {
+        // ignore
+    }
 }
