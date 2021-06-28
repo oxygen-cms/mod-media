@@ -18,7 +18,7 @@
         "oxygen/core": "~0.10.0",
         "oxygen/crud": "~0.7.2",
         "oxygen/data": "~0.10.0",
-        "oxygen/mod-import-export": "~0.3.6",
+        "oxygen/mod-import-export": "~0.4.0",
         "intervention/image":  "~2.0",
         "illuminate/support": "~6.0",
         "sensiolabs/ansi-to-html": "^1.2"

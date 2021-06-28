@@ -62,12 +62,14 @@ class ImageVariantGenerator {
      * @throws Exception
      */
     public function generateImageVariants(Media $media) {
+        $generated = false;
         foreach(self::RESPONSIVE_SIZES as $size) {
             if(!$media->hasVariant($size)) {
                 $this->resizeImage($media, $size);
+                $generated = true;
             }
         }
-        $this->mediaRepository->persist($media, false);
+        $this->mediaRepository->persist($media, $generated);
     }
 
     /**

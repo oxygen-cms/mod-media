@@ -3,16 +3,11 @@
 
 namespace OxygenModule\Media\Console;
 
-use Intervention\Image\Facades\Image as ImageFacade;
+use Exception;
 use Illuminate\Console\Command;
-use Oxygen\Data\Repository\ExcludeTrashedScope;
-use Oxygen\Data\Repository\ExcludeVersionsScope;
-use Oxygen\Data\Repository\QueryParameters;
-use OxygenModule\Media\Controller\MediaController;
-use OxygenModule\Media\Entity\Media;
 use OxygenModule\Media\ImageVariantGenerator;
 use OxygenModule\Media\ImageVariantGeneratorOutputInterface;
-use OxygenModule\Media\Repository\MediaRepositoryInterface;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class GenerateImageVariantsCommand extends Command implements ImageVariantGeneratorOutputInterface {
 
@@ -30,7 +25,7 @@ class GenerateImageVariantsCommand extends Command implements ImageVariantGenera
      */
     protected $description = 'Generates multiple sizes of images for making images "responsive" (improves load times)';
     /**
-     * @var \Symfony\Component\Console\Helper\ProgressBar
+     * @var ProgressBar|null
      */
     private $bar;
 
@@ -48,7 +43,7 @@ class GenerateImageVariantsCommand extends Command implements ImageVariantGenera
      * Execute the console command.
      *
      * @return void
-     * @throws \Exception
+     * @throws Exception
      */
     public function handle(ImageVariantGenerator $generator) {
         $generator->generateAllImageVariants($this);

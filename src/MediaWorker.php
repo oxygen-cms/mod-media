@@ -2,14 +2,15 @@
 
 namespace OxygenModule\Media;
 
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Filesystem\Filesystem;
 use OxygenModule\ImportExport\WorkerInterface;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use Illuminate\Config\Repository;
-use OxygenModule\ImportExport\Strategy\ExportStrategy;
-use OxygenModule\ImportExport\Strategy\ImportStrategy;
 use Illuminate\Support\Str;
+use RecursiveIteratorIterator;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class MediaWorker implements WorkerInterface {
 
@@ -26,7 +27,7 @@ class MediaWorker implements WorkerInterface {
     /**
      * Constructs the MediaWorker.
      *
-     * @param \Illuminate\Filesystem\Filesystem $files
+     * @param Filesystem $files
      * @param Repository                        $config
      */
 
@@ -39,41 +40,43 @@ class MediaWorker implements WorkerInterface {
     /**
      * Adds the media items to the backup.
      *
-     * @param ExportStrategy $strategy
-     * @return void
-     * @throws \Exception
+     * @param OutputInterface $output
+     * @return array
+     * @throws Exception
      */
-    public function export(ExportStrategy $strategy) {
+    public function export(OutputInterface $output): array {
         $media = $this->media->columns(['filename']);
 
         $baseDir = $this->config->get('oxygen.mod-media.directory.filesystem');
+        $files = [];
         foreach($media as $item) {
             $fullFile = $baseDir . '/' . $item['filename'];
 
             if($this->files->exists($fullFile)) {
                 Log::warning($fullFile . ' was referenced by a media item but does not exist in the filesystem');
-                $strategy->addFile($fullFile, dirname($baseDir));
+                $files[basename($fullFile)] = $fullFile;
             }
         }
+        return $files;
     }
 
     /**
      * Cleans up any temporary files that were created after they have been added to the ZIP archive.
      *
-     * @param ExportStrategy $strategy
+     * @param OutputInterface $output
      * @return void
      */
-    public function postExport(ExportStrategy $strategy) {
+    public function postExport(OutputInterface $output) {
         // no temporary files created
     }
 
     /**
      * Imports the media items.
      *
-     * @param ImportStrategy $strategy
+     * @param RecursiveIteratorIterator $files
+     * @param OutputInterface $output
      */
-    public function import(ImportStrategy $strategy) {
-        $files = $strategy->getFiles();
+    public function import(RecursiveIteratorIterator $files, OutputInterface $output) {
         $mediaPath = $this->config->get('oxygen.mod-media.directory.filesystem');
 
         foreach($files as $file) {
@@ -85,14 +88,12 @@ class MediaWorker implements WorkerInterface {
                 Str::contains($path, $search) &&
                 in_array($file->getExtension(), ['jpeg','png','gif','mp3','mp4a','aif','wav','mpga','ogx','pdf'])
             ) {
-                if(app()->runningInConsole()) {
-                    echo 'Importing media file from ' . $path . "\n";
-                }
+                $output->writeln('Importing media file from ' . $path);
 
                 $newPath = $mediaPath . '/' . basename($path);
 
                 if($this->files->exists($newPath)) {
-                    echo 'WARNING: Overwriting ' . $newPath . "\n";
+                    $output->writeln('WARNING: Overwriting ' . $newPath);
                 }
 
                 $this->files->move($file->getPathname(), $newPath);
