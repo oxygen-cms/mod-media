@@ -2,6 +2,7 @@
 
 namespace OxygenModule\Media\Controller;
 
+use Doctrine\ORM\NonUniqueResultException;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -57,7 +58,7 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
      */
     private $variantGenerator;
     /**
-     * @var \Symfony\Component\Console\Output\BufferedOutput
+     * @var BufferedOutput
      */
     private $consoleOutput = null;
 
@@ -87,7 +88,7 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
      * @param Request $request
      * @param PaginationService $paginationService
      * @return JsonResponse
-     * @throws \Doctrine\ORM\NonUniqueResultException
+     * @throws NonUniqueResultException
      */
     public function getListApi(Request $request, PaginationService $paginationService): JsonResponse {
         $path = $request->get('path');

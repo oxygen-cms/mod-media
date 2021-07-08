@@ -225,9 +225,11 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
     public function paginateChildFiles(PaginationService $pagination, $perPage, $currentPage): LengthAwarePaginator {
         $criteria = Criteria::create()
             ->andWhere(new Comparison('headVersion', Comparison::EQ, null))
-            ->andWhere(new Comparison('deletedAt', Comparison::EQ, null))
-            ->setFirstResult($perPage * ($currentPage - 1))->setMaxResults($perPage);
-        $totalItems = $this->childFiles->count();
+            ->andWhere(new Comparison('deletedAt', Comparison::EQ, null));
+        $totalItems = $this->childFiles->matching($criteria)->count();
+        $criteria
+            ->setFirstResult($perPage * ($currentPage - 1))
+            ->setMaxResults($perPage);
         $items = $this->childFiles->matching($criteria)->toArray();
         return $pagination->make($items, $totalItems, $perPage);
     }

@@ -343,4 +343,11 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
             'parentDirectory' => $this->parentDirectory !== null ? $this->parentDirectory->toArray() : null
         ];
     }
+
+    /**
+     * @return mixed
+     */
+    public function getName() {
+        return $this->name;
+    }
 }
