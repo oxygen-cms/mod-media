@@ -12,6 +12,10 @@ $router->middleware(['web', 'oxygen.auth', '2fa.require'])->group(function() use
     $router->post('/oxygen/api/media/make-responsive', MediaController::class . '@postMakeResponsive')
         ->name("media.postMakeResponsive")
         ->middleware("oxygen.permissions:media.postMakeResponsive");
+
+    $router->get('/oxygen/api/media/{media}/preview', MediaController::class . '@getPreviewImage')
+        ->name("media.getPreviewImage")
+        ->middleware("oxygen.permissions:media.getPreviewImage");
 });
 
 MediaDirectoryController::registerCrudRoutes($router, 'mediaDirectory');

@@ -3,6 +3,8 @@
 namespace OxygenModule\Media\Controller;
 
 use Doctrine\ORM\NonUniqueResultException;
+use Illuminate\Contracts\Filesystem\Filesystem;
+use Org_Heigl\Ghostscript\Ghostscript;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -155,14 +157,54 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
     public function getView($slug, $extension): ?BinaryFileResponse {
         try {
             $media = $this->repository->findByPath($slug);
-            return new BinaryFileResponse(config('oxygen.mod-media.directory.filesystem') . '/' . basename($media->getFilename()), 200, [], true);
-        } catch(FileNotFoundException $e) {
-            abort(410);
-            return null;
-        } catch(NoResultException $e) {
+            return new BinaryFileResponse($this->getMediaFilepath($media), 200, [], true);
+        } catch(FileNotFoundException | NoResultException $e) {
             abort(404);
             return null;
         }
+    }
+
+    /**
+     * Generates a preview of the first page of a PDF file, for use in the admin UI...
+     *
+     * @param Media $media
+     * @param Filesystem $filesystem
+     * @return JsonResponse|BinaryFileResponse
+     * @throws Exception if the PDF failed to generate an image preview
+     */
+    public function getPreviewImage(Media $media) {
+        if($media->getType() !== Media::TYPE_DOCUMENT) {
+            return response()->json([
+                'content' => 'Not a document',
+                'status' => Notification::FAILED
+            ]);
+        }
+
+        $originalFilepath = $this->getMediaFilepath($media);
+        $previewFilepath = $this->getMediaFilepath($media, '.preview.jpg');
+
+        if(!is_readable($previewFilepath)) {
+            if(!is_readable($originalFilepath)) {
+                abort(404);
+                return null;
+            }
+            // WARNING: ensure Ghostscript is kept up to date as there have been some severe
+            // remote-code execution vulnerabilities in it when used on malicious PDFs.
+            // Since normal uses cannot upload images to this CMS, the risk is lower, but still
+            // something to keep in mind.
+            $gs = new Ghostscript();
+            $gs->setDevice('jpeg')
+                ->setInputFile($originalFilepath)
+                ->setOutputFile(basename($previewFilepath))
+                ->setResolution(72)
+                ->setTextAntiAliasing(Ghostscript::ANTIALIASING_HIGH);
+            if(false === $gs->render()) {
+                logger()->error('Ghostscript failed to render PDF preview: ' . $gs->getRenderString());
+                throw new Exception('Ghostscript failed to render PDF preview: ' . $gs->getRenderString());
+            }
+        }
+
+        return new BinaryFileResponse($previewFilepath, 200, [], false);
     }
 
     /**
@@ -235,9 +277,10 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
      * Processes an uploaded image.
      *
      * @param UploadedFile $file
-     * @param string $name
-     * @param string $slug
-     * @param string $headVersion
+     * @param null|string $name
+     * @param null|string $slug
+     * @param mixed $headVersion
+     * @param int|null $parentDirectoryId
      * @return \Illuminate\Contracts\Support\MessageBag messages
      */
     protected function makeFromFile(UploadedFile $file, $name = null, $slug = null, $headVersion = null, ?int $parentDirectoryId = null): \Illuminate\Contracts\Support\MessageBag {
@@ -341,5 +384,14 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
 
     public function clearProgress() {
         // ignore
+    }
+
+    private function getMediaFilepath(Media $media, $extension = null): string {
+        $filename = basename($media->getFilename());
+        $info = pathinfo($filename);
+        if($extension !== null) {
+            $filename = $info['filename'] . $extension;
+        }
+        return config('oxygen.mod-media.directory.filesystem') . '/' . $filename;
     }
 }
