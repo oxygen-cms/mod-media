@@ -28,7 +28,6 @@ class MediaServiceProvider extends BaseServiceProvider {
     public function boot() {
         $this->mergeConfigFrom(__DIR__ . '/../config/config.php', 'oxygen.mod-media');
         $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'oxygen/mod-media');
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'oxygen/mod-media');
         $this->loadRoutesFrom(__DIR__ . '/../resources/routes.php');
         $this->commands(GenerateImageVariantsCommand::class);
         $this->commands(CollectGarbageCommand::class);
