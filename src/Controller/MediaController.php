@@ -70,12 +70,12 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
     }
 
     /**
-     * Constructs the PagesController.
+     * Constructs the MediaController.
      *
      * @param MediaRepositoryInterface $repository
      * @param MediaDirectoryRepositoryInterface $directoryRepository
+     * @param ImageVariantGenerator $variantGenerator
      */
-
     public function __construct(MediaRepositoryInterface $repository, MediaDirectoryRepositoryInterface $directoryRepository, ImageVariantGenerator $variantGenerator) {
         $this->repository = $repository;
         $this->directoryRepository = $directoryRepository;
@@ -168,7 +168,6 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
      * Generates a preview of the first page of a PDF file, for use in the admin UI...
      *
      * @param Media $media
-     * @param Filesystem $filesystem
      * @return JsonResponse|BinaryFileResponse
      * @throws Exception if the PDF failed to generate an image preview
      */

@@ -228,9 +228,14 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
      * @return Unique
      */
     private function getUniqueSlugValidationRule(): Unique {
-        return Unique::amongst(Media::class)->field('slug')->ignoreWithId($this->getId())
-            ->addWhere('parentDirectory', ValidationService::EQUALS, $this->parentDirectory ? $this->parentDirectory->getId() : null)
-            ->addWhere('headVersion', ValidationService::NOT_EQUALS, $this->getHeadId());
+        $unique = Unique::amongst(Media::class)->field('slug')->ignoreWithId($this->getId())
+            ->addWhere('parentDirectory', ValidationService::EQUALS, $this->parentDirectory ? $this->parentDirectory->getId() : null);
+        if($this->isHead()) {
+            $unique = $unique->addWhere('headVersion', ValidationService::EQUALS, ValidationService::NULL);
+        } else {
+            $unique->addWhere('id', ValidationService::EQUALS, $this->getId());
+        }
+        return $unique;
     }
 
     /**
