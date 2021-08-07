@@ -31,6 +31,7 @@ class HtmlPresenter implements PresenterInterface {
     ];
 
     const MEDIA_FALLBACK_ORDER = ['image/png', 'image/gif', 'image/jpeg'];
+    const MEDIA_LOAD_ORDER = ['image/webp', 'image/png', 'image/gif', 'image/jpeg'];
 
     protected $useAbsoluteURLs;
 
