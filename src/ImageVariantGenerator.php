@@ -16,18 +16,29 @@ use Symfony\Component\HttpFoundation\File\File;
 
 class ImageVariantGenerator {
 
-    const RESPONSIVE_SIZES = [320, 640, 960, 1280];
+    const RESPONSIVE_SIZES = [320, 640, 960, 1280, null];
+    const FALLBACK_MODE = 'fallback';
+    const PRIMARY_FALLBACK_FORMAT = 'jpg';
+    const FALLBACK_FORMATS = ['image/jpeg', 'image/png'];
+    const IMAGE_FORMATS = [null, 'webp', self::FALLBACK_MODE];
     const MIN_RESPONSIVE_WIDTH = 400;
 
     /**
      * @var MediaRepositoryInterface
      */
-    private $mediaRepository;
+    private MediaRepositoryInterface $mediaRepository;
 
     public function __construct(MediaRepositoryInterface $mediaRepository) {
         $this->mediaRepository = $mediaRepository;
     }
 
+    /**
+     * Moves the file to an appropriate location, according to the hash of its contents.
+     *
+     * @param File $file
+     * @param $extension
+     * @return string
+     */
     public function hashFileAndMove(File $file, $extension): string {
         // this way we also deduplicate files
         $fileHash = hash_file('sha256', $file->getRealPath(), false);
@@ -40,33 +51,57 @@ class ImageVariantGenerator {
      * Makes a resized version of the image.
      *
      * @param Media $media
-     * @param int $width
+     * @param int|null $width width to resize to (if any)
+     * @param string|null $format format to convert to
      * @throws Exception
      */
-    protected function resizeImage(Media $media, int $width) {
+    protected function generateVariant(Media $media, ?int $width, ?string $format) {
         if($media->getType() !== Media::TYPE_IMAGE) {
             throw new Exception('Media item is not an image');
         }
-        $image = ImageFacade::make(config('oxygen.mod-media.directory.filesystem') . '/' . $media->getFilename());
-        $image->resize($width, null, function($constraint) {
-            $constraint->aspectRatio();
-            $constraint->upsize();
-        });
-        $tmpFilename = config('oxygen.mod-media.directory.filesystem') . '/' . basename($media->getFilename()) . '.' . $width . '.tmp.' . basename($media->getExtension());
-        $image->save($tmpFilename);
-        $variantFilename = $this->hashFileAndMove(new File($tmpFilename), $media->getExtension());
-        $media->addVariant($variantFilename, $width);
+        $image = ImageFacade::make(config('oxygen.mod-media.directory.filesystem') . '/' . basename($media->getFilename()));
+        if($width !== null) {
+            $image->resize($width, null, function($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+        }
+        $tmpFilename = config('oxygen.mod-media.directory.filesystem') . '/' . basename($media->getFilename()) . '.' . $width . '.tmp.' . basename($format ?: $media->getExtension());
+        $image->save($tmpFilename, null, $format);
+        $variantFilename = $this->hashFileAndMove(new File($tmpFilename), $format ?: $media->getExtension());
+        $format = $format ?: $media->getExtension();
+        $mimeFormat = Media::IMAGE_MIME_MAP[$format]['mime'];
+        $media->addVariant($variantFilename, $width, $mimeFormat);
     }
 
     /**
+     * Generates variants for a given media item, if required...
+     *
      * @throws Exception
      */
     public function generateImageVariants(Media $media) {
+        if($media->getType() !== Media::TYPE_IMAGE) {
+            throw new \Exception('media item is not an image');
+        }
+
         $generated = false;
         foreach(self::RESPONSIVE_SIZES as $size) {
-            if(!$media->hasVariant($size)) {
-                $this->resizeImage($media, $size);
-                $generated = true;
+            foreach(self::IMAGE_FORMATS as $format) {
+                if($format === self::FALLBACK_MODE) {
+                    // ensure that we have an appropriate fallback image format (jpeg, png) to use just in case...
+                    $hasFallback = false;
+                    foreach(self::FALLBACK_FORMATS as $fallbackFormat) {
+                        if ($media->hasVariant($size, $fallbackFormat)) {
+                            $hasFallback = true;
+                        }
+                    }
+                    if(!$hasFallback) {
+                        $this->generateVariant($media, $size, self::PRIMARY_FALLBACK_FORMAT);
+                    }
+                } else if(!$media->hasVariant($size, $format === null ? null : Media::IMAGE_MIME_MAP[$format]['mime'])) {
+                    $this->generateVariant($media, $size, $format);
+                    $generated = true;
+                }
             }
         }
         $this->mediaRepository->persist($media, $generated);

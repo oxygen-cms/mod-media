@@ -293,7 +293,7 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
 
         $validator = validator(
             ['file' => $file],
-            ['file' => 'max:10000|mimes:jpeg,png,gif,mp3,mp4a,aif,wav,mpga,ogx,pdf']
+            ['file' => 'max:10000|mimes:jpeg,png,gif,webm,webp,mp3,mp4a,aif,wav,mpga,ogx,pdf']
         );
 
         if($validator->fails()) {
@@ -307,23 +307,7 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
             $slug = strtolower(Str::slug($name));
         }
         $extension = str_replace('jpeg', 'jpg', $file->guessExtension());
-        $type = Media::TYPE_DOCUMENT;
-
-        switch($extension) {
-            case 'jpg':
-            case 'png':
-            case 'gif':
-                $type = Media::TYPE_IMAGE;
-                break;
-            case 'mp3':
-            case 'mp4a':
-            case 'ogx':
-            case 'mpga':
-            case 'aif':
-            case 'wav':
-                $type = Media::TYPE_AUDIO;
-                break;
-        }
+        $type = Media::IMAGE_MIME_MAP[$extension]['type'];
 
         try {
             $media = $this->repository->make();

@@ -26,7 +26,7 @@ class CollectGarbageCommand extends Command {
     protected $description = 'Deletes underlying filesystem resources which are no longer referenced by any media items.';
 
     protected function getFilenames(Media $item): array {
-        return array_merge([$item->getFilename()], array_map(function($item) { return $item['filename']; }, $item->getVariants()));
+        return array_map(function($item) { return $item['filename']; }, $item->getVariants());
     }
 
     public function handle(MediaRepositoryInterface $repository, Filesystem $filesystem) {

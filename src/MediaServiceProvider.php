@@ -8,6 +8,8 @@ use Oxygen\Core\Templating\TwigTemplateCompiler;
 use OxygenModule\ImportExport\ImportExportManager;
 use OxygenModule\Media\Console\CollectGarbageCommand;
 use OxygenModule\Media\Console\GenerateImageVariantsCommand;
+use OxygenModule\Media\Entity\Media;
+use OxygenModule\Media\Presenter\HtmlHelper;
 use OxygenModule\Media\Presenter\HtmlPresenter;
 use OxygenModule\Media\Presenter\PresenterInterface;
 use OxygenModule\Media\Repository\DoctrineMediaDirectoryRepository;
@@ -24,6 +26,7 @@ class MediaServiceProvider extends BaseServiceProvider {
      * Boots the package.
      *
      * @return void
+     * @throws \Exception
      */
     public function boot() {
         $this->mergeConfigFrom(__DIR__ . '/../config/config.php', 'oxygen.mod-media');
@@ -48,11 +51,53 @@ class MediaServiceProvider extends BaseServiceProvider {
                     $template = $options['template'];
                     unset($options['template']);
                 }
-                return $this->app[HtmlPresenter::class]->present($file, $template, $options);// . '\')->present(' . $expression . ');;
-            }, ['is_variadic' => true]));
+                echo $this->app[HtmlPresenter::class]->present($file, $template, $options);
+            }, ['is_variadic' => true, 'is_safe' => ['html']]));
 
             $compiler->addAllowedFunction('media');
         });
+
+        $this->app[HtmlPresenter::class]->addTemplate('default.image', function(HtmlPresenter $presenter, Media $media, array $customAttributes) {
+            $sources = $presenter->getImageSources($media, $customAttributes['external']);
+            $src = $presenter->getImageFallbackSource($media, $sources);
+            $alt = $media->getCaption() ? $media->getCaption() : $media->getName();
+            $baseAttributes = [
+                'src' => $src,
+                'alt' => $alt
+            ];
+
+            unset($customAttributes['external']);
+
+            $html = '<picture>';
+            foreach($sources as $mimeType => $source) {
+                $html .= '<source ' . html_attributes(['type' => $mimeType, 'srcset' => HtmlHelper::srcset($source)]) . '>';
+            }
+            $html .= HtmlHelper::img(array_merge_recursive_distinct($baseAttributes, $customAttributes));
+            $html .= '</picture>';
+            return $html;
+        });
+        $this->app[HtmlPresenter::class]->addTemplate('default.audio', function(HtmlPresenter $presenter, Media $media, array $customAttributes) {
+            $sources = $presenter->getAudioSources($media, $customAttributes['external']);
+            unset($customAttributes['external']);
+            return HtmlHelper::audio(
+                $sources,
+                array_merge_recursive_distinct(['controls' => 'controls'], $customAttributes),
+                'Audio Not Supported'
+            );
+        });
+        $this->app[HtmlPresenter::class]->addTemplate('default.link', function(HtmlPresenter $presenter, Media $media, array $customAttributes) {
+            $href = $presenter->getFilename($media->getFilename(), $customAttributes['external']);
+            $content = $customAttributes['content'] ?? ($media->getCaption() ? $media->getCaption() : $media->getName());
+            unset($customAttributes['external']);
+            unset($customAttributes['content']);
+            return HtmlHelper::a(
+                $content,
+                array_merge_recursive_distinct(['target' => '_blank', 'href' => $href], $customAttributes)
+            );
+        });
+        $this->app[HtmlPresenter::class]->setDefaultTemplate('default.image', Media::TYPE_IMAGE);
+        $this->app[HtmlPresenter::class]->setDefaultTemplate('default.audio', Media::TYPE_AUDIO);
+        $this->app[HtmlPresenter::class]->setDefaultTemplate('default.link', Media::TYPE_DOCUMENT);
 
         $this->loadMigrationsFrom(__DIR__ . '/../migrations');
     }

@@ -37,6 +37,21 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     const TYPE_IMAGE = 0;
     const TYPE_DOCUMENT = 1;
     const TYPE_AUDIO = 2;
+    const IMAGE_MIME_MAP = [
+        'webp' => ['mime' => 'image/webp', 'type' => self::TYPE_IMAGE],
+        'jpg' => ['mime' => 'image/jpeg', 'type' => self::TYPE_IMAGE],
+        'jpeg' => ['mime' => 'image/jpeg', 'type' => self::TYPE_IMAGE],
+        'png' => ['mime' => 'image/png', 'type' => self::TYPE_IMAGE],
+        'gif' => ['mime' => 'image/gif', 'type' => self::TYPE_IMAGE],
+        'pdf' => ['mime' => 'application/pdf', 'type' => self::TYPE_DOCUMENT],
+        'mp3' => ['mime' => 'audio/mpeg', 'type' => self::TYPE_AUDIO],
+        'm4a' => ['mime' => 'audio/m4a', 'type' => self::TYPE_AUDIO],
+        'ogg' => ['mime' => 'audio/ogg', 'type' => self::TYPE_AUDIO],
+        'ogx' => ['mime' => 'audio/ogg', 'type' => self::TYPE_AUDIO],
+        'mpga' => ['mime' => 'audio/mpeg', 'type' => self::TYPE_AUDIO],
+        'aif' => ['mime' => 'audio/aiff', 'type' => self::TYPE_AUDIO],
+        'wav' => ['mime' => 'audio/wav', 'type' => self::TYPE_AUDIO],
+    ];
 
     /**
      * @ORM\Column(type="string")
@@ -162,6 +177,13 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     }
 
     /**
+     * Returns the extension of the media item.
+     */
+    public function getMimeType() {
+        return self::IMAGE_MIME_MAP[$this->getExtension()]['mime'];
+    }
+
+    /**
      * Returns a list of alternative files for this media item.
      *
      * Specifically, will be a list of different-sized versions of an image,
@@ -170,7 +192,20 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
      * @return array
      */
     public function getVariants(): array {
-        return $this->alternativeFiles === null ? [] : $this->alternativeFiles;
+        $variants = $this->alternativeFiles === null ? [] : array_map(function(array $variant) {
+            $info = pathinfo($variant['filename']);
+            if(!isset($variant['mime'])) {
+                $variant['mime'] = self::IMAGE_MIME_MAP[$info['extension']]['mime'];
+            }
+            return $variant;
+        }, $this->alternativeFiles);
+
+        $variants[] = [
+            'filename' => $this->getFilename(),
+            'mime' => self::IMAGE_MIME_MAP[$this->getExtension()]['mime'],
+            'width' => null
+        ];
+        return $variants;
     }
 
     public function clearVariants(): array {
@@ -259,12 +294,14 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
      * Adds a new variant to this image.
      *
      * @param string $filename
-     * @param int $width
+     * @param int|null $width
+     * @param string $mimeType
      */
-    public function addVariant(string $filename, int $width) {
+    public function addVariant(string $filename, ?int $width, string $mimeType) {
         $this->alternativeFiles[] = [
             'filename' => $filename,
-            'width' => $width
+            'width' => $width,
+            'mime' => $mimeType
         ];
     }
 
@@ -292,12 +329,13 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
 
     /**
      * Returns true if there already exists a variant at this width.
-     * @param int $size
+     * @param int|null $size null if original size
+     * @param string|null $desiredMime the requested mime type, or null if don't care
      * @return bool
      */
-    public function hasVariant(int $size) {
+    public function hasVariant(?int $size, ?string $desiredMime = null) {
         foreach($this->getVariants() as $variant) {
-            if($variant['width'] === $size) {
+            if($variant['width'] === $size && ($desiredMime === null || $variant['mime'] === $desiredMime)) {
                 return true;
             }
         }
