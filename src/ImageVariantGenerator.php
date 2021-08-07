@@ -21,7 +21,6 @@ class ImageVariantGenerator {
     const PRIMARY_FALLBACK_FORMAT = 'jpg';
     const FALLBACK_FORMATS = ['image/jpeg', 'image/png'];
     const IMAGE_FORMATS = [null, 'webp', self::FALLBACK_MODE];
-    const MIN_RESPONSIVE_WIDTH = 400;
 
     /**
      * @var MediaRepositoryInterface
@@ -135,13 +134,6 @@ class ImageVariantGenerator {
             }
 
             $output->writeln('<fg=green>Generating</> variants for ' . $media->getFullPath());
-
-            $image = ImageFacade::make($filepath);
-            if($image->width() < self::MIN_RESPONSIVE_WIDTH) {
-                $output->writeln('<fg=yellow>Skipping</> width too small');
-                $skipped++;
-                continue;
-            }
 
             $prevCount = count($media->getVariants());
             $this->generateImageVariants($media);
