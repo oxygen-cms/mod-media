@@ -393,4 +393,11 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     public function getName() {
         return $this->name;
     }
+
+    /**
+     * @return mixed
+     */
+    public function getCaption() {
+        return $this->caption;
+    }
 }
