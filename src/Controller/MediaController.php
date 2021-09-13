@@ -3,7 +3,6 @@
 namespace OxygenModule\Media\Controller;
 
 use Doctrine\ORM\NonUniqueResultException;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Org_Heigl\Ghostscript\Ghostscript;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Exception;
