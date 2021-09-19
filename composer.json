@@ -30,16 +30,11 @@
         }
     },
     "extra": {
-        "title": "Oxygen Module - Media",
-        "readme": "oxygen.md",
-        "changes": "changes.md",
-        "providers": [
-            {
-                "name": "Media",
-                "class": "OxygenModule\\Media\\MediaServiceProvider",
-                "description": "Adds the Media interface"
-            }
-        ]
+        "laravel": {
+            "providers": [
+                "OxygenModule\\Media\\MediaServiceProvider"
+            ]
+        }
     },
     "require-dev": {
         "phpstan/phpstan": "^0.12.18",
