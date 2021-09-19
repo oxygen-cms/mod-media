@@ -1,25 +1,37 @@
 <?php
 
+use Illuminate\Routing\Router;
 use OxygenModule\Media\Controller\MediaController;
 use OxygenModule\Media\Controller\MediaDirectoryController;
 
 $router = app('router');
-MediaController::registerCrudRoutes($router, 'media');
-MediaController::registerSoftDeleteRoutes($router, 'media');
-MediaController::registerVersionableRoutes($router, 'media');
 
-$router->middleware(['web', 'oxygen.auth', '2fa.require'])->group(function() use ($router) {
-    $router->post('/oxygen/api/media/make-responsive', MediaController::class . '@postMakeResponsive')
-        ->name("media.postMakeResponsive")
-        ->middleware("oxygen.permissions:media.postMakeResponsive");
+$router->prefix('/oxygen/api')
+    ->middleware('api_auth')
+    ->group(function(Router $router) {
 
-    $router->get('/oxygen/api/media/{media}/preview', MediaController::class . '@getPreviewImage')
-        ->name("media.getPreviewImage")
-        ->middleware("oxygen.permissions:media.getPreviewImage");
-});
+        // media
+        $router->prefix('media')->group(function(Router $router) {
+            MediaController::registerCrudRoutes($router);
+            MediaController::registerSoftDeleteRoutes($router);
+            MediaController::registerVersionableRoutes($router);
 
-MediaDirectoryController::registerCrudRoutes($router, 'mediaDirectory');
-MediaDirectoryController::registerSoftDeleteRoutes($router, 'mediaDirectory');
+            $router->post('/make-responsive', MediaController::class . '@postMakeResponsive')
+                ->name("media.postMakeResponsive")
+                ->middleware("oxygen.permissions:media.postMakeResponsive");
+
+            $router->get('/{media}/preview', MediaController::class . '@getPreviewImage')
+                ->name("media.getPreviewImage")
+                ->middleware("oxygen.permissions:media.getPreviewImage");
+        });
+
+        // media directory
+        $router->prefix('media-directory')->group(function(Router $router) {
+            MediaDirectoryController::registerCrudRoutes($router);
+            MediaDirectoryController::registerSoftDeleteRoutes($router);
+        });
+
+    });
 
 $router->get('media/{slug}.{extension}', MediaController::class . '@getView')
        ->name('media.getView')

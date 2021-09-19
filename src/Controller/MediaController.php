@@ -208,19 +208,10 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
     /**
      * Uploads a Media item.
      *
-     * @param Request $request
+     * @param Request $input
      * @return JsonResponse
      */
-    public function postCreateApi(Request $request): JsonResponse {
-        return $this->postUpload($request);
-    }
-
-    /**
-     * Process the uploaded file.
-     *
-     * @return JsonResponse
-     */
-    public function postUpload(Request $input) {
+    public function postCreateApi(Request $input): JsonResponse {
         // if no file has been uploaded
         if(!$input->hasFile('file')) {
             // guess if post_max_size has been reached
@@ -230,9 +221,10 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
                 $message = __('oxygen/crud::messages.upload.noFiles');
             }
 
-            return notify(
-                new Notification($message, Notification::FAILED)
-            );
+            return response()->json([
+                'content' => $message,
+                'status' => 'failed'
+            ]);
         }
 
         $files = $input->file('file');

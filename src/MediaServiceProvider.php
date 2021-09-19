@@ -72,7 +72,7 @@ class MediaServiceProvider extends BaseServiceProvider {
             foreach(HtmlPresenter::MEDIA_LOAD_ORDER as $mimeType) {
                 if(!isset($sources[$mimeType])) { continue; }
                 $source = $sources[$mimeType];
-                $html .= '<source ' . html_attributes(['type' => $mimeType, 'srcset' => HtmlHelper::srcset($source)]) . '>';
+                $html .= '<source ' . html_attributes(['type' => $mimeType, 'srcset' => HtmlHelper::srcset($source)]) . ' />';
             }
             $html .= HtmlHelper::img(array_merge_recursive_distinct($baseAttributes, $customAttributes));
             $html .= '</picture>';
