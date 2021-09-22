@@ -58,25 +58,12 @@ class MediaServiceProvider extends BaseServiceProvider {
         });
 
         $this->app[HtmlPresenter::class]->addTemplate('default.image', function(HtmlPresenter $presenter, Media $media, array $customAttributes) {
-            $sources = $presenter->getImageSources($media, $customAttributes['external']);
-            $src = $presenter->getImageFallbackSource($media, $sources);
-            $alt = $media->getCaption() ? $media->getCaption() : $media->getName();
-            $baseAttributes = [
-                'src' => $src,
-                'alt' => $alt
-            ];
-
-            unset($customAttributes['external']);
-
-            $html = '<picture>';
-            foreach(HtmlPresenter::MEDIA_LOAD_ORDER as $mimeType) {
-                if(!isset($sources[$mimeType])) { continue; }
-                $source = $sources[$mimeType];
-                $html .= '<source ' . html_attributes(['type' => $mimeType, 'srcset' => HtmlHelper::srcset($source)]) . ' />';
-            }
-            $html .= HtmlHelper::img(array_merge_recursive_distinct($baseAttributes, $customAttributes));
-            $html .= '</picture>';
-            return $html;
+            return $presenter->renderResponsivePicture(
+                $media,
+                $customAttributes,
+                function(array $sources) { return null; },
+                $presenter->getStyle() === HtmlPresenter::EMAIL_HTML ? HtmlPresenter::IDEAL_EMAIL_FALLBACK_SIZE : HtmlPresenter::IDEAL_WEB_FALLBACK_SIZE
+            );
         });
         $this->app[HtmlPresenter::class]->addTemplate('default.audio', function(HtmlPresenter $presenter, Media $media, array $customAttributes) {
             $sources = $presenter->getAudioSources($media, $customAttributes['external']);

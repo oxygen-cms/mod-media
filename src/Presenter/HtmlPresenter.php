@@ -11,44 +11,43 @@ use Illuminate\Config\Repository;
 
 class HtmlPresenter implements PresenterInterface {
 
+    const MEDIA_FALLBACK_ORDER = ['image/png', 'image/gif', 'image/jpeg'];
+    const MEDIA_LOAD_ORDER = ['image/webp', 'image/png', 'image/gif', 'image/jpeg'];
+    const IDEAL_WEB_FALLBACK_SIZE = 1000;
+    const IDEAL_EMAIL_FALLBACK_SIZE = 600;
+
+    const MODERN_HTML = 'html5';
+    const EMAIL_HTML = 'html4';
+
+    use PresentsResponsiveImages;
+
     /**
      * Templates
      *
      * @var array
      */
-
-    protected $templates;
+    protected array $templates = [];
 
     /**
      * Default Template
      *
      * @var array
      */
-    protected $defaultTemplate = [
+    protected array $defaultTemplate = [
         Media::TYPE_IMAGE => null,
         Media::TYPE_AUDIO => null,
         Media::TYPE_DOCUMENT => null
     ];
 
-    const MEDIA_FALLBACK_ORDER = ['image/png', 'image/gif', 'image/jpeg'];
-    const MEDIA_LOAD_ORDER = ['image/webp', 'image/png', 'image/gif', 'image/jpeg'];
+    protected bool $useAbsoluteURLs;
 
-    protected $useAbsoluteURLs;
+    protected array $tagStyleStack;
 
-    protected $tagStyle;
+    private Repository $config;
 
-    /**
-     * @var Repository
-     */
-    private $config;
-    /**
-     * @var MediaRepositoryInterface
-     */
-    private $entities;
-    /**
-     * @var UrlGenerator
-     */
-    private $url;
+    private MediaRepositoryInterface $entities;
+
+    private UrlGenerator $url;
 
     /**
      * Constructs the HtmlPresenter.
@@ -61,7 +60,7 @@ class HtmlPresenter implements PresenterInterface {
         $this->config = $config;
         $this->entities = $media;
         $this->url = $url;
-        $this->tagStyle = 'html5';
+        $this->tagStyleStack = [self::MODERN_HTML];
         $this->useAbsoluteURLs = false;
         $this->templates = [];
     }
@@ -99,52 +98,6 @@ class HtmlPresenter implements PresenterInterface {
      */
     public function setDefaultTemplate(string $name, int $type) {
         $this->defaultTemplate[$type] = $name;
-    }
-
-    /**
-     * @param Media $media
-     * @param bool $external
-     * @return array
-     * @throws Exception
-     */
-    public function getImageSources(Media $media, bool $external): array {
-        if($media->getType() !== Media::TYPE_IMAGE) { throw new Exception('expected image media'); }
-        $sources = [];
-        foreach($media->getVariants() as $variant) {
-            $sources[$variant['mime']][] = [
-                'filename' => $this->getFilename($variant['filename'], $external),
-                'width' => $variant['width']
-            ];
-        }
-        return $sources;
-    }
-
-    /**
-     * Selects an appropriate source to be used as a fallback.
-     *
-     * The format of this fallback image should be one of the broadly-compatible formats (png, jpeg, gif)
-     * @param Media $media
-     * @param array $sources
-     * @return string
-     */
-    public function getImageFallbackSource(Media $media, array $sources): string {
-        foreach(self::MEDIA_FALLBACK_ORDER as $mime) {
-            if(!isset($sources[$mime])) {
-                continue;
-            }
-            $fallbackSources = $sources[$mime];
-            $largest = ['width' => 0];
-            foreach($fallbackSources as $source) {
-                if($source['width'] === null || $source['width'] > $largest['width']) {
-                    $largest = $source;
-                }
-            }
-            if(isset($largest['filename'])) {
-                return $largest['filename'];
-            }
-        }
-        logger()->warning('image missing appropriate fallback format, instead only got: ' . print_r($sources, true) . ' for item ' . $media->getFullPath());
-        return '';
     }
 
     /**
@@ -229,13 +182,22 @@ class HtmlPresenter implements PresenterInterface {
     }
 
     /**
-     * Whether the presenter should use html4/html5 etc
+     * Pushes a style onto the stack of styles.
      *
      * @param string $style
      * @return void
      */
-    public function setStyle(string $style) {
-        $this->tagStyle = $style;
+    public function pushStyle(string $style) {
+        $this->tagStyleStack[] = $style;
+    }
+
+    /**
+     * Pops a stack from the style, returning to the previous style.
+     *
+     * @return void
+     */
+    public function popStyle() {
+        array_pop($this->tagStyleStack);
     }
 
     /**
@@ -244,6 +206,6 @@ class HtmlPresenter implements PresenterInterface {
      * @return string
      */
     public function getStyle(): string {
-        return $this->tagStyle;
+        return last($this->tagStyleStack);
     }
 }

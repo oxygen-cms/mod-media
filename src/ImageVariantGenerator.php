@@ -35,7 +35,7 @@ class ImageVariantGenerator {
      * Moves the file to an appropriate location, according to the hash of its contents.
      *
      * @param File $file
-     * @param $extension
+     * @param string $extension
      * @return string
      */
     public function hashFileAndMove(File $file, $extension): string {
