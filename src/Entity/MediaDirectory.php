@@ -59,7 +59,7 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
     private $childDirectories;
 
     /**
-     * @ORM\OneToMany(targetEntity="OxygenModule\Media\Entity\Media", mappedBy="parentDirectory", fetch="EXTRA_LAZY")
+     * @ORM\OneToMany(targetEntity="OxygenModule\Media\Entity\Media", mappedBy="parentDirectory", fetch="EXTRA_LAZY", cascade={"remove"})
      * @ORM\OrderBy({"name" = "ASC"})
      * @var Collection
      */
@@ -179,7 +179,7 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
      *
      * @return array
      */
-    protected function getFillableFields(): array {
+    public function getFillableFields(): array {
         return ['name', 'slug', 'parentDirectory'];
     }
 
