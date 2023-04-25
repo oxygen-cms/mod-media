@@ -184,7 +184,6 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
         if(!is_readable($previewFilepath)) {
             if(!is_readable($originalFilepath)) {
                 abort(404);
-                return null;
             }
             // WARNING: ensure Ghostscript is kept up to date as there have been some severe
             // remote-code execution vulnerabilities in it when used on malicious PDFs.

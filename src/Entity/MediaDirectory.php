@@ -5,6 +5,7 @@ namespace OxygenModule\Media\Entity;
 
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Expr\Comparison;
+use Doctrine\Common\Collections\Selectable;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping AS ORM;
 use http\Message;
@@ -61,7 +62,7 @@ class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
     /**
      * @ORM\OneToMany(targetEntity="OxygenModule\Media\Entity\Media", mappedBy="parentDirectory", fetch="EXTRA_LAZY", cascade={"remove"})
      * @ORM\OrderBy({"name" = "ASC"})
-     * @var Collection
+     * @var Selectable
      */
     private $childFiles;
 

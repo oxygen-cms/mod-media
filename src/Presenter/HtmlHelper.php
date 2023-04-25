@@ -111,7 +111,7 @@ class HtmlHelper {
      * @return array
      */
     public static function getImageSources(PresenterInterface $presenter, Media $media, bool $external): array {
-        if($media->getType() !== Media::TYPE_IMAGE) { throw new Exception('expected image'); }
+        if($media->getType() !== Media::TYPE_IMAGE) { throw new \Exception('expected image'); }
         $sources = [];
         foreach($media->getVariants() as $variant) {
             $sources[$variant['mime']][] = [
