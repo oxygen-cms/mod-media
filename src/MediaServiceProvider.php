@@ -2,21 +2,21 @@
 
 namespace OxygenModule\Media;
 
-use Illuminate\Cache\Repository;
-use Oxygen\Core\Blueprint\BlueprintManager;
+use Oxygen\Core\Content\ObjectLinkRegistry;
 use Oxygen\Core\Templating\TwigTemplateCompiler;
 use OxygenModule\ImportExport\ImportExportManager;
 use OxygenModule\Media\Console\CollectGarbageCommand;
 use OxygenModule\Media\Console\GenerateImageVariantsCommand;
 use OxygenModule\Media\Entity\Media;
-use OxygenModule\Media\Presenter\HtmlHelper;
-use OxygenModule\Media\Presenter\HtmlPresenter;
+use OxygenModule\Media\Presenter\AudioTemplate;
+use OxygenModule\Media\Presenter\MediaPresenter;
+use OxygenModule\Media\Presenter\ImageTemplate;
+use OxygenModule\Media\Presenter\LinkTemplate;
 use OxygenModule\Media\Presenter\PresenterInterface;
 use OxygenModule\Media\Repository\DoctrineMediaDirectoryRepository;
 use OxygenModule\Media\Repository\DoctrineMediaRepository;
 use OxygenModule\Media\Repository\MediaDirectoryRepositoryInterface;
 use OxygenModule\Media\Repository\MediaRepositoryInterface;
-use OxygenModule\Media\Repository\MediaSubscriber;
 use Oxygen\Data\BaseServiceProvider;
 use Twig\TwigFunction;
 
@@ -45,48 +45,33 @@ class MediaServiceProvider extends BaseServiceProvider {
         $this->app->resolving(TwigTemplateCompiler::class, function(TwigTemplateCompiler $compiler) {
             $twig = $compiler->getTwig();
 
-            $twig->addFunction(new TwigFunction('media', function($file, array $options = []) {
+            $twig->addFunction(new TwigFunction('media', function($slug, array $options = []) use($compiler) {
                 $template = null;
                 if(isset($options['template'])) {
                     $template = $options['template'];
                     unset($options['template']);
                 }
-                echo $this->app[HtmlPresenter::class]->present($file, $template, $options);
+                $presenter = $this->app[MediaPresenter::class];
+                if($compiler->shouldConvertToTipTap())
+                {
+                    $media = $this->app[MediaRepositoryInterface::class]->findByPath($slug);
+                    $template = $presenter->getTemplate($template, $media->getType());
+                    return $template->transformToTipTapHtml($presenter, $media, $options);
+                }
+                echo $presenter->present($slug, $template, $options);
             }, ['is_variadic' => true, 'is_safe' => ['html']]));
 
             $compiler->addAllowedFunction('media');
         });
 
-        $this->app[HtmlPresenter::class]->addTemplate('default.image', function(HtmlPresenter $presenter, Media $media, array $customAttributes) {
-            return $presenter->renderResponsivePicture(
-                $media,
-                $customAttributes,
-                function(array $sources) { return null; },
-                $presenter->getStyle() === HtmlPresenter::EMAIL_HTML ? HtmlPresenter::IDEAL_EMAIL_FALLBACK_SIZE : HtmlPresenter::IDEAL_WEB_FALLBACK_SIZE
-            );
-        });
-        $this->app[HtmlPresenter::class]->addTemplate('default.audio', function(HtmlPresenter $presenter, Media $media, array $customAttributes) {
-            $sources = $presenter->getAudioSources($media, $customAttributes['external']);
-            unset($customAttributes['external']);
-            return HtmlHelper::audio(
-                $sources,
-                array_merge_recursive_distinct(['controls' => 'controls'], $customAttributes),
-                'Audio Not Supported'
-            );
-        });
-        $this->app[HtmlPresenter::class]->addTemplate('default.link', function(HtmlPresenter $presenter, Media $media, array $customAttributes) {
-            $href = $presenter->getFilename($media->getFilename(), $customAttributes['external']);
-            $content = $customAttributes['content'] ?? ($media->getCaption() ? $media->getCaption() : $media->getName());
-            unset($customAttributes['external']);
-            unset($customAttributes['content']);
-            return HtmlHelper::a(
-                $content,
-                array_merge_recursive_distinct(['target' => '_blank', 'href' => $href], $customAttributes)
-            );
-        });
-        $this->app[HtmlPresenter::class]->setDefaultTemplate('default.image', Media::TYPE_IMAGE);
-        $this->app[HtmlPresenter::class]->setDefaultTemplate('default.audio', Media::TYPE_AUDIO);
-        $this->app[HtmlPresenter::class]->setDefaultTemplate('default.link', Media::TYPE_DOCUMENT);
+        $this->app[MediaPresenter::class]->addTemplate('default.image', new ImageTemplate());
+        $this->app[MediaPresenter::class]->addTemplate('default.audio', new AudioTemplate());
+        $this->app[MediaPresenter::class]->addTemplate('default.link', new LinkTemplate());
+        $this->app[MediaPresenter::class]->setDefaultTemplate('default.image', Media::TYPE_IMAGE);
+        $this->app[MediaPresenter::class]->setDefaultTemplate('default.audio', Media::TYPE_AUDIO);
+        $this->app[MediaPresenter::class]->setDefaultTemplate('default.link', Media::TYPE_DOCUMENT);
+
+        $this->app[ObjectLinkRegistry::class]->addType(new MediaLinkType($this->app[MediaRepositoryInterface::class]));
 
         $this->loadMigrationsFrom(__DIR__ . '/../migrations');
     }
@@ -103,9 +88,9 @@ class MediaServiceProvider extends BaseServiceProvider {
         $this->app->bind(MediaRepositoryInterface::class, DoctrineMediaRepository::class);
         $this->app->bind(MediaDirectoryRepositoryInterface::class, DoctrineMediaDirectoryRepository::class);
 
-        $this->app->bind(PresenterInterface::class, HtmlPresenter::class);
-        $this->app->singleton(HtmlPresenter::class, function($app) {
-            return new HtmlPresenter($app['config'], $app['url'], $app[MediaRepositoryInterface::class]);
+        $this->app->bind(PresenterInterface::class, MediaPresenter::class);
+        $this->app->singleton(MediaPresenter::class, function($app) {
+            return new MediaPresenter($app['config'], $app['url'], $app[MediaRepositoryInterface::class]);
         });
 
         // extend backup functionality

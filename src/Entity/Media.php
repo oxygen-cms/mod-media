@@ -226,7 +226,7 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
             ],
             'slug' => [
                 'required',
-                'slug',
+                'alpha_dash',
                 'max:255',
                 $this->getUniqueSlugValidationRule()
             ],
@@ -400,4 +400,5 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
     public function getCaption() {
         return $this->caption;
     }
+
 }

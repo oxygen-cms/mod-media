@@ -9,17 +9,10 @@ use OxygenModule\Media\Repository\MediaRepositoryInterface;
 use OxygenModule\Media\Entity\Media;
 use Illuminate\Config\Repository;
 
-class HtmlPresenter implements PresenterInterface {
-
-    const MEDIA_FALLBACK_ORDER = ['image/png', 'image/gif', 'image/jpeg'];
+class MediaPresenter implements PresenterInterface {
     const MEDIA_LOAD_ORDER = ['image/webp', 'image/png', 'image/gif', 'image/jpeg'];
     const IDEAL_WEB_FALLBACK_SIZE = 1000;
     const IDEAL_EMAIL_FALLBACK_SIZE = 600;
-
-    const MODERN_HTML = 'html5';
-    const EMAIL_HTML = 'html4';
-
-    use PresentsResponsiveImages;
 
     /**
      * Templates
@@ -39,9 +32,10 @@ class HtmlPresenter implements PresenterInterface {
         Media::TYPE_DOCUMENT => null
     ];
 
-    protected bool $useAbsoluteURLs;
+    const USE_ABSOLUTE_URLS = 'use_absolute_urls';
+    const HTML4 = 'html4';
 
-    protected array $tagStyleStack;
+    protected array $styleHints;
 
     private Repository $config;
 
@@ -50,18 +44,17 @@ class HtmlPresenter implements PresenterInterface {
     private UrlGenerator $url;
 
     /**
-     * Constructs the HtmlPresenter.
+     * Constructs the MediaPresenter.
      *
-     * @param Repository                                 $config
+     * @param Repository $config
      * @param UrlGenerator $url
-     * @param MediaRepositoryInterface                   $media
+     * @param MediaRepositoryInterface $media
      */
     public function __construct(Repository $config, UrlGenerator $url, MediaRepositoryInterface $media) {
         $this->config = $config;
         $this->entities = $media;
         $this->url = $url;
-        $this->tagStyleStack = [self::MODERN_HTML];
-        $this->useAbsoluteURLs = false;
+        $this->styleHints = [];
         $this->templates = [];
     }
 
@@ -69,10 +62,10 @@ class HtmlPresenter implements PresenterInterface {
      * Adds a template.
      *
      * @param string $name
-     * @param callable $callback
+     * @param TemplateInterface $template
      */
-    public function addTemplate(string $name, callable $callback) {
-        $this->templates[$name] = $callback;
+    public function addTemplate(string $name, TemplateInterface $template) {
+        $this->templates[$name] = $template;
     }
 
     /**
@@ -80,9 +73,9 @@ class HtmlPresenter implements PresenterInterface {
      *
      * @param string|null $name
      * @param int $type
-     * @return callable
+     * @return TemplateInterface
      */
-    public function getTemplate(?string $name, int $type = Media::TYPE_IMAGE) {
+    public function getTemplate(?string $name, int $type = Media::TYPE_IMAGE): TemplateInterface {
         if($name === null) {
             return $this->templates[$this->defaultTemplate[$type]];
         } else {
@@ -98,23 +91,6 @@ class HtmlPresenter implements PresenterInterface {
      */
     public function setDefaultTemplate(string $name, int $type) {
         $this->defaultTemplate[$type] = $name;
-    }
-
-    /**
-     * @param Media $media
-     * @param bool $external
-     * @return string[]
-     * @throws Exception
-     */
-    public function getAudioSources(Media $media, bool $external): array {
-        if($media->getType() !== Media::TYPE_AUDIO) { throw new Exception('expected image media'); }
-
-        $sources = [];
-        foreach($media->getVariants() as $variant) {
-            $sources[$variant['mime']] = $this->getFilename($variant['filename'], $external);
-        }
-
-        return $sources;
     }
 
     /**
@@ -142,12 +118,15 @@ class HtmlPresenter implements PresenterInterface {
      * @throws Exception
      */
     public function display(Media $media, $template = null, array $customAttributes = []): string {
+        if($this->hasStyleHint(self::USE_ABSOLUTE_URLS)) {
+            $customAttributes['external'] = true;
+        }
         if(!isset($customAttributes['external'])) {
             $customAttributes['external'] = false;
         }
 
         $template = $this->getTemplate($template, $media->getType());
-        return $template($this, $media, $customAttributes);
+        return $template->present($this, $media, $customAttributes);
     }
 
     /**
@@ -162,50 +141,18 @@ class HtmlPresenter implements PresenterInterface {
     public function present(string $slug, $template = null, array $attributes = []): string {
         try {
             $item = $this->entities->findByPath($slug);
-            if($this->useAbsoluteURLs === true) {
-                $attributes['external'] = true;
-            }
             return $this->display($item, $template, $attributes);
         } catch(NoResultException $e) {
             return 'Media `' . e($slug) . '` Not Found';
         }
     }
 
-    /**
-     * Whether the presenter should use absolute URLs to the resource
-     *
-     * @param boolean $use
-     * @return void
-     */
-    public function setUseAbsoluteURLs(bool $use) {
-        $this->useAbsoluteURLs = $use;
+    public function setStyleHint(string $hint, bool $enabled): void {
+        $this->styleHints[$hint] = $enabled;
     }
 
-    /**
-     * Pushes a style onto the stack of styles.
-     *
-     * @param string $style
-     * @return void
-     */
-    public function pushStyle(string $style) {
-        $this->tagStyleStack[] = $style;
+    public function hasStyleHint(string $hint): bool {
+        return isset($this->styleHints[$hint]) && $this->styleHints[$hint];
     }
 
-    /**
-     * Pops a stack from the style, returning to the previous style.
-     *
-     * @return void
-     */
-    public function popStyle() {
-        array_pop($this->tagStyleStack);
-    }
-
-    /**
-     * Whether the presenter should use html4/html5 etc
-     *
-     * @return string
-     */
-    public function getStyle(): string {
-        return last($this->tagStyleStack);
-    }
 }
