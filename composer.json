@@ -14,13 +14,13 @@
         }
     ],
     "require": {
-        "php": ">=7.4.0",
-        "oxygen/core": "~0.14.0",
-        "oxygen/crud": "~0.11.0",
-        "oxygen/data": "~0.11.1",
-        "oxygen/mod-import-export": "~0.4.1",
+        "php": "^8.1",
+        "oxygen/core": "dev-laravel10",
+        "oxygen/crud": "dev-laravel10",
+        "oxygen/data": "dev-laravel10",
+        "oxygen/mod-import-export": "dev-laravel10",
         "intervention/image":  "~2.0",
-        "illuminate/support": "~6.0",
+        "illuminate/support": "^10.0",
         "sensiolabs/ansi-to-html": "^1.2",
         "org_heigl/ghostscript": "^2.3"
     },
