@@ -1,1 +1,0 @@
-The Oxygen Media Manager
