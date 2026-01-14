@@ -151,7 +151,9 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
     /**
      * View this image.
      *
-     * @return BinaryFileResponse
+     * @param $slug
+     * @param $extension
+     * @return BinaryFileResponse|null
      */
     public function getView($slug, $extension): ?BinaryFileResponse {
         try {
