@@ -12,9 +12,9 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 
 use SensioLabs\AnsiConverter\AnsiToHtmlConverter;
-use Oxygen\Crud\Controller\BasicCrudApi;
-use Oxygen\Crud\Controller\SoftDeleteCrudApi;
-use Oxygen\Crud\Controller\VersionableCrudApi;
+use Oxygen\Core\Controller\BasicCrudTrait;
+use Oxygen\Core\Controller\SoftDeleteCrudTrait;
+use Oxygen\Core\Controller\VersionableCrudTrait;
 use Oxygen\Data\Exception\NoResultException;
 use Oxygen\Data\Pagination\PaginationService;
 use Oxygen\Data\Repository\ExcludeTrashedScope;
@@ -63,9 +63,9 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
      */
     private $consoleOutput = null;
 
-    use BasicCrudApi, SoftDeleteCrudApi, VersionableCrudApi {
-        VersionableCrudApi::getListQueryParameters insteadof BasicCrudApi, SoftDeleteCrudApi;
-        SoftDeleteCrudApi::deleteDeleteApi insteadof BasicCrudApi;
+    use BasicCrudTrait, SoftDeleteCrudTrait, VersionableCrudTrait {
+        VersionableCrudTrait::getListQueryParameters insteadof BasicCrudTrait, SoftDeleteCrudTrait;
+        SoftDeleteCrudTrait::deleteDeleteApi insteadof BasicCrudTrait;
     }
 
     /**
@@ -80,7 +80,7 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
         $this->directoryRepository = $directoryRepository;
         $this->variantGenerator = $variantGenerator;
 
-        BasicCrudApi::setupLangMappings(self::LANG_MAPPINGS);
+        BasicCrudTrait::setupLangMappings(self::LANG_MAPPINGS);
     }
 
     /**
@@ -217,9 +217,9 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
         if(!$input->hasFile('file')) {
             // guess if post_max_size has been reached
             if (empty($_FILES) && empty($_POST) && isset($_SERVER['REQUEST_METHOD']) && strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
-                $message = __('oxygen/crud::messages.upload.tooLarge');
+                $message = __('oxygen/core::messages.upload.tooLarge');
             } else {
-                $message = __('oxygen/crud::messages.upload.noFiles');
+                $message = __('oxygen/core::messages.upload.noFiles');
             }
 
             return response()->json([
@@ -277,7 +277,7 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
     protected function makeFromFile(UploadedFile $file, $name = null, $slug = null, $headVersion = null, ?int $parentDirectoryId = null): \Illuminate\Contracts\Support\MessageBag {
         if(!$file->isValid()) {
             $messages = new MessageBag();
-            return $messages->add('exists', __('oxygen/crud::messages.upload.failed', [
+            return $messages->add('exists', __('oxygen/core::messages.upload.failed', [
                 'name' => $file->getClientOriginalName(),
                 'error' => $file->getError()
             ]));
@@ -317,7 +317,7 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
 
             $messages = new MessageBag();
 
-            return $messages->add('success', __('oxygen/crud::messages.upload.success', [
+            return $messages->add('success', __('oxygen/core::messages.upload.success', [
                 'name' => $file->getClientOriginalName()
             ]));
         } catch(InvalidEntityException $e) {

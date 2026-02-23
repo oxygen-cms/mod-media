@@ -8,8 +8,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Oxygen\Core\Http\Notification;
-use Oxygen\Crud\Controller\BasicCrudApi;
-use Oxygen\Crud\Controller\SoftDeleteCrudApi;
+use Oxygen\Core\Controller\BasicCrudTrait;
+use Oxygen\Core\Controller\SoftDeleteCrudTrait;
 use Oxygen\Data\Repository\QueryParameters;
 use OxygenModule\Media\Entity\MediaDirectory;
 use OxygenModule\Media\Repository\MediaDirectoryRepositoryInterface;
@@ -28,9 +28,9 @@ class MediaDirectoryController extends Controller {
         'pluralResource' => 'Directories'
     ];
 
-    use BasicCrudApi, SoftDeleteCrudApi {
-        SoftDeleteCrudApi::getListQueryParameters insteadof BasicCrudApi;
-        SoftDeleteCrudApi::deleteDeleteApi insteadof BasicCrudApi;
+    use BasicCrudTrait, SoftDeleteCrudTrait {
+        SoftDeleteCrudTrait::getListQueryParameters insteadof BasicCrudTrait;
+        SoftDeleteCrudTrait::deleteDeleteApi insteadof BasicCrudTrait;
     }
 
     /**
@@ -40,7 +40,7 @@ class MediaDirectoryController extends Controller {
      */
     public function __construct(MediaDirectoryRepositoryInterface $repository) {
         $this->repository = $repository;
-        BasicCrudApi::setupLangMappings(self::LANG_MAPPINGS);
+        BasicCrudTrait::setupLangMappings(self::LANG_MAPPINGS);
     }
 
     /**
