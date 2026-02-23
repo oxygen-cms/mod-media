@@ -108,7 +108,7 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
      * @ORM\ManyToOne(targetEntity="OxygenModule\Media\Entity\Media",  inversedBy="versions")
      * @ORM\JoinColumn(name="head_version", referencedColumnName="id")
      */
-    private $headVersion;
+    protected $headVersion;
 
     /**
      * @ORM\ManyToOne(targetEntity="OxygenModule\Media\Entity\MediaDirectory",  inversedBy="childFiles")

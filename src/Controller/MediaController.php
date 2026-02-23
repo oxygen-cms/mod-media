@@ -80,7 +80,7 @@ class MediaController extends Controller implements ImageVariantGeneratorOutputI
         $this->directoryRepository = $directoryRepository;
         $this->variantGenerator = $variantGenerator;
 
-        BasicCrudTrait::setupLangMappings(self::LANG_MAPPINGS);
+        self::setupLangMappings(self::LANG_MAPPINGS);
     }
 
     /**

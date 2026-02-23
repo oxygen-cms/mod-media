@@ -40,7 +40,7 @@ class MediaDirectoryController extends Controller {
      */
     public function __construct(MediaDirectoryRepositoryInterface $repository) {
         $this->repository = $repository;
-        BasicCrudTrait::setupLangMappings(self::LANG_MAPPINGS);
+        self::setupLangMappings(self::LANG_MAPPINGS);
     }
 
     /**
