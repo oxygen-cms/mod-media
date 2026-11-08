@@ -28,42 +28,32 @@ use Doctrine\Common\Collections\Criteria;
 use Oxygen\Data\Validation\ValidationService;
 use OxygenModule\Media\Repository\MediaDirectoryRepositoryInterface;
 
-/**
- * @ORM\Entity
- * @ORM\HasLifecycleCallbacks
- */
+#[ORM\Entity]
+#[ORM\HasLifecycleCallbacks]
 class MediaDirectory implements PrimaryKeyInterface, Validatable, Arrayable {
 
     use PrimaryKey, Timestamps, SoftDeletes;
     use Accessors, Fillable;
 
-    /**
-     * @ORM\Column(type="string", nullable=false)
-     */
+    #[ORM\Column(type: 'string', nullable: false)]
     protected $slug;
 
-    /**
-    * @ORM\Column(type="string")
-    */
+    #[ORM\Column(type: 'string')]
     protected $name;
 
-    /**
-     * @ORM\ManyToOne(targetEntity="OxygenModule\Media\Entity\MediaDirectory", inversedBy="childDirectories", fetch="EAGER")
-     * @ORM\JoinColumn(name="parent_directory", referencedColumnName="id")
-     */
+    #[ORM\ManyToOne(targetEntity: 'OxygenModule\Media\Entity\MediaDirectory', inversedBy: 'childDirectories', fetch: 'EAGER')]
+    #[ORM\JoinColumn(name: 'parent_directory', referencedColumnName: 'id')]
     private $parentDirectory;
 
-    /**
-     * @ORM\OneToMany(targetEntity="OxygenModule\Media\Entity\MediaDirectory", mappedBy="parentDirectory", cascade={"persist", "remove", "merge"}, fetch="EXTRA_LAZY")
-     * @ORM\OrderBy({ "name" = "ASC" })
-     */
+    #[ORM\OneToMany(targetEntity: 'OxygenModule\Media\Entity\MediaDirectory', mappedBy: 'parentDirectory', cascade: ['persist', 'remove'], fetch: 'EXTRA_LAZY')]
+    #[ORM\OrderBy(['name' => 'ASC'])]
     private $childDirectories;
 
     /**
-     * @ORM\OneToMany(targetEntity="OxygenModule\Media\Entity\Media", mappedBy="parentDirectory", fetch="EXTRA_LAZY", cascade={"remove"})
-     * @ORM\OrderBy({"name" = "ASC"})
      * @var Selectable
      */
+    #[ORM\OneToMany(targetEntity: 'OxygenModule\Media\Entity\Media', mappedBy: 'parentDirectory', fetch: 'EXTRA_LAZY', cascade: ['remove'])]
+    #[ORM\OrderBy(['name' => 'ASC'])]
     private $childFiles;
 
     /**

@@ -24,11 +24,9 @@ use Oxygen\Data\Validation\Rules\Unique;
 use Oxygen\Data\Validation\Validatable;
 use Oxygen\Data\Validation\ValidationService;
 
-/**
- * @ORM\Entity
- * @ORM\Table(name="media")
- * @ORM\HasLifecycleCallbacks
- */
+#[ORM\Entity]
+#[ORM\Table(name: 'media')]
+#[ORM\HasLifecycleCallbacks]
 class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterface, Searchable, Versionable, HasUpdatedAt, Arrayable, FillableInterface {
 
     use PrimaryKey, Timestamps, SoftDeletes, Versions, CacheInvalidator;
@@ -53,67 +51,43 @@ class Media implements PrimaryKeyInterface, Validatable, CacheInvalidatorInterfa
         'wav' => ['mime' => 'audio/wav', 'type' => self::TYPE_AUDIO],
     ];
 
-    /**
-     * @ORM\Column(type="string")
-     */
+    #[ORM\Column(type: 'string')]
     protected $name;
 
-    /**
-     * @ORM\Column(type="string")
-     */
+    #[ORM\Column(type: 'string')]
     protected $slug;
 
-    /**
-     * @ORM\Column(type="string")
-     */
+    #[ORM\Column(type: 'string')]
     protected $filename;
 
-    /**
-     * @ORM\Column(type="json", nullable=true)
-     */
+    #[ORM\Column(type: 'json', nullable: true)]
     protected $alternativeFiles;
 
-    /**
-     * @ORM\Column(type="string", nullable=true)
-     */
+    #[ORM\Column(type: 'string', nullable: true)]
     protected $author;
 
-    /**
-     * @ORM\Column(type="text", nullable=true)
-     */
+    #[ORM\Column(type: 'text', nullable: true)]
     protected $caption;
 
-    /**
-     * @ORM\Column(type="text", nullable=true)
-     */
+    #[ORM\Column(type: 'text', nullable: true)]
     protected $description;
 
-    /**
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Column(type: 'integer')]
     protected $type;
 
-    /**
-     * @ORM\Column(name="`default`", type="string", nullable=true)
-     */
+    #[ORM\Column(name: '`default`', type: 'string', nullable: true)]
     protected $default;
 
-    /**
-     * @ORM\OneToMany(targetEntity="OxygenModule\Media\Entity\Media", mappedBy="headVersion", cascade={"persist", "remove", "merge"})
-     * @ORM\OrderBy({ "updatedAt" = "DESC" })
-     */
+    #[ORM\OneToMany(targetEntity: 'OxygenModule\Media\Entity\Media', mappedBy: 'headVersion', cascade: ['persist', 'remove'])]
+    #[ORM\OrderBy(['updatedAt' => 'DESC'])]
     private $versions;
 
-    /**
-     * @ORM\ManyToOne(targetEntity="OxygenModule\Media\Entity\Media",  inversedBy="versions")
-     * @ORM\JoinColumn(name="head_version", referencedColumnName="id")
-     */
+    #[ORM\ManyToOne(targetEntity: 'OxygenModule\Media\Entity\Media', inversedBy: 'versions')]
+    #[ORM\JoinColumn(name: 'head_version', referencedColumnName: 'id')]
     protected $headVersion;
 
-    /**
-     * @ORM\ManyToOne(targetEntity="OxygenModule\Media\Entity\MediaDirectory",  inversedBy="childFiles")
-     * @ORM\JoinColumn(name="directory", referencedColumnName="id", nullable=true)
-     */
+    #[ORM\ManyToOne(targetEntity: 'OxygenModule\Media\Entity\MediaDirectory', inversedBy: 'childFiles')]
+    #[ORM\JoinColumn(name: 'directory', referencedColumnName: 'id', nullable: true)]
     private $parentDirectory;
 
     /**
