@@ -35,6 +35,18 @@
       ]
     }
   },
+  "config": {
+    "policy": {
+      "advisories": {
+        "ignore": {
+          "laravel/framework": {
+            "constraint": "^10.0",
+            "reason": "deferring Laravel 11 upgrade"
+          }
+        }
+      }
+    }
+  },
   "require-dev": {
     "phpstan/phpstan": "^1.8",
     "phpspec/phpspec": "^8.0"
