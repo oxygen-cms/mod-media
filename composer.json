@@ -15,11 +15,11 @@
   ],
   "require": {
     "php": "^8.3",
-    "oxygen/core": "~1.0.0",
-    "oxygen/data": "~0.12.0",
-    "oxygen/mod-import-export": "~0.6.0",
+    "oxygen/core": "~1.2.0",
+    "oxygen/data": "~0.14.0",
+    "oxygen/mod-import-export": "~0.7.0",
     "intervention/image": "~2.0",
-    "illuminate/support": "^10.0",
+    "illuminate/support": "^12.0",
     "sensiolabs/ansi-to-html": "^1.2",
     "org_heigl/ghostscript": "^2.3"
   },
@@ -38,16 +38,6 @@
   "config": {
     "platform": {
       "php": "8.3.0"
-    },
-    "policy": {
-      "advisories": {
-        "ignore": {
-          "laravel/framework": {
-            "constraint": "^10.0",
-            "reason": "deferring Laravel 11 upgrade"
-          }
-        }
-      }
     }
   },
   "require-dev": {
